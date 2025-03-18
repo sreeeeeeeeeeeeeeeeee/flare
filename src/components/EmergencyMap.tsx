@@ -23,15 +23,21 @@ L.Marker.prototype.options.icon = DefaultIcon;
 // Component to handle map data updates
 function MapUpdater({ data }: { data: MapDataType }) {
   const map = useMap();
+  const initialSetupDoneRef = useRef(false);
   
   useEffect(() => {
-    // Center the map on California if no danger zones
-    if (data.dangerZones.length === 0) {
-      map.setView([36.778259, -119.417931], 6);
-    } else {
-      // Center on first danger zone
-      const coords = data.dangerZones[0].geometry.coordinates[0][0];
-      map.setView([coords[1], coords[0]], 8);
+    // Only set the initial view once when the component mounts
+    if (!initialSetupDoneRef.current) {
+      // Center the map on California if no danger zones
+      if (data.dangerZones.length === 0) {
+        map.setView([36.778259, -119.417931], 6);
+      } else {
+        // Center on first danger zone
+        const coords = data.dangerZones[0].geometry.coordinates[0][0];
+        map.setView([coords[1], coords[0]], 8);
+      }
+      
+      initialSetupDoneRef.current = true;
     }
   }, [map, data]);
   
@@ -85,6 +91,10 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
       zoom={6} 
       style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
       className="z-0"
+      zoomControl={true}
+      scrollWheelZoom={true}
+      doubleClickZoom={true}
+      dragging={true}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
