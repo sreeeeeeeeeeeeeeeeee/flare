@@ -28,11 +28,11 @@ function MapUpdater({ data }: { data: MapDataType }) {
   useEffect(() => {
     // Only set the initial view once when the component mounts
     if (!initialSetupDoneRef.current) {
-      // Center the map on California if no danger zones
+      // Center the map on Ontario, Canada if no danger zones
       if (data.dangerZones.length === 0) {
-        map.setView([36.778259, -119.417931], 6);
+        map.setView([51.2538, -85.3232], 5); // Ontario, Canada coordinates
       } else {
-        // Center on first danger zone
+        // If there are danger zones, center on the first one
         const coords = data.dangerZones[0].geometry.coordinates[0][0];
         map.setView([coords[1], coords[0]], 8);
       }
@@ -87,8 +87,8 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
 
   return (
     <MapContainer 
-      center={[36.778259, -119.417931]} 
-      zoom={6} 
+      center={[51.2538, -85.3232]} // Ontario, Canada coordinates
+      zoom={5} 
       style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
       className="z-0"
       zoomControl={true}

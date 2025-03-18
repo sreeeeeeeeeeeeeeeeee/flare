@@ -10,7 +10,7 @@ const sampleImages = [
   'https://images.unsplash.com/photo-1625718645313-d2401a97cedd?q=80&w=2070',
 ];
 
-// Initial data state
+// Initial data state - updated for Ontario, Canada
 const initialData: MapDataType = {
   responders: [
     {
@@ -19,9 +19,9 @@ const initialData: MapDataType = {
       type: 'drone',
       status: 'active',
       position: {
-        latitude: 36.778259,
-        longitude: -119.417931,
-        locationName: 'North Valley'
+        latitude: 43.6532,
+        longitude: -79.3832,
+        locationName: 'Toronto'
       }
     },
     {
@@ -30,9 +30,9 @@ const initialData: MapDataType = {
       type: 'fire',
       status: 'en-route',
       position: {
-        latitude: 36.738259,
-        longitude: -119.497931,
-        locationName: 'Eastern Hills'
+        latitude: 43.8561,
+        longitude: -79.5370,
+        locationName: 'Vaughan'
       }
     },
     {
@@ -41,9 +41,9 @@ const initialData: MapDataType = {
       type: 'medical',
       status: 'active',
       position: {
-        latitude: 36.808259,
-        longitude: -119.447931,
-        locationName: 'Highway 99'
+        latitude: 43.7315,
+        longitude: -79.7624,
+        locationName: 'Brampton'
       }
     },
   ],
@@ -55,11 +55,11 @@ const initialData: MapDataType = {
       geometry: {
         type: 'Polygon',
         coordinates: [[
-          [-119.6, 36.88],
-          [-119.7, 36.88],
-          [-119.7, 36.98],
-          [-119.6, 36.98],
-          [-119.6, 36.88],
+          [-80.2, 45.5],
+          [-80.3, 45.5],
+          [-80.3, 45.6],
+          [-80.2, 45.6],
+          [-80.2, 45.5],
         ]]
       }
     }
@@ -67,33 +67,33 @@ const initialData: MapDataType = {
   evacuationRoutes: [
     {
       id: 'route-1',
-      startPoint: 'Northridge',
-      endPoint: 'Southdale',
+      startPoint: 'Sudbury',
+      endPoint: 'North Bay',
       status: 'open',
-      estimatedTime: 25,
+      estimatedTime: 85,
       transportMethods: ['car', 'emergency'],
       geometry: {
         type: 'LineString',
         coordinates: [
-          [-119.5, 36.83],
-          [-119.45, 36.73],
-          [-119.4, 36.7],
+          [-80.99, 46.49],
+          [-81.10, 46.30],
+          [-79.46, 46.30],
         ]
       }
     },
     {
       id: 'route-2',
-      startPoint: 'Westfield',
-      endPoint: 'Downtown',
+      startPoint: 'Thunder Bay',
+      endPoint: 'Dryden',
       status: 'congested',
-      estimatedTime: 40,
+      estimatedTime: 180,
       transportMethods: ['car', 'foot'],
       geometry: {
         type: 'LineString',
         coordinates: [
-          [-119.6, 36.75],
-          [-119.55, 36.75],
-          [-119.5, 36.7],
+          [-89.25, 48.38],
+          [-90.21, 48.77],
+          [-92.84, 49.78],
         ]
       }
     }
@@ -103,18 +103,18 @@ const initialData: MapDataType = {
       id: 'alert-1',
       severity: 'critical',
       title: 'Wildfire Alert',
-      message: 'Active wildfire detected in North Valley. Immediate evacuation required.',
+      message: 'Active wildfire detected in Northern Ontario. Immediate evacuation required.',
       time: '13:45',
-      location: 'North Valley',
+      location: 'Northern Ontario',
       isNew: false
     },
     {
       id: 'alert-2',
       severity: 'warning',
       title: 'Traffic Congestion',
-      message: 'Heavy traffic on Highway 41 due to evacuation. Seek alternative routes.',
+      message: 'Heavy traffic on Highway 401 due to evacuation. Seek alternative routes.',
       time: '13:30',
-      location: 'Highway 41',
+      location: 'Highway 401',
       isNew: false
     }
   ],
@@ -123,7 +123,7 @@ const initialData: MapDataType = {
       id: 'video-1',
       type: 'drone',
       source: sampleImages[0],
-      location: 'North Valley Wildfire Zone',
+      location: 'Northern Ontario Wildfire Zone',
       hasAlert: true,
       relatedFeeds: [
         {
@@ -134,7 +134,7 @@ const initialData: MapDataType = {
         {
           id: 'video-1-2',
           source: sampleImages[2],
-          location: 'Highway 41 Evacuation'
+          location: 'Highway 11 Evacuation'
         }
       ]
     }
@@ -159,15 +159,26 @@ const getUpdatedData = (): MapDataType => {
     const newResponderTypes: Array<'drone' | 'police' | 'fire' | 'medical'> = ['drone', 'police', 'fire', 'medical'];
     const newResponderType = newResponderTypes[Math.floor(Math.random() * newResponderTypes.length)];
     
+    // Ontario locations
+    const ontarioLocations = [
+      { name: 'Ottawa', lat: 45.4215, lng: -75.6972 },
+      { name: 'Hamilton', lat: 43.2557, lng: -79.8711 },
+      { name: 'London', lat: 42.9849, lng: -81.2453 },
+      { name: 'Kingston', lat: 44.2312, lng: -76.4860 },
+      { name: 'Windsor', lat: 42.3149, lng: -83.0364 }
+    ];
+    
+    const location = ontarioLocations[Math.floor(Math.random() * ontarioLocations.length)];
+    
     data.responders.push({
       id: `resp-${Math.floor(Math.random() * 1000)}`,
       name: `${newResponderType.charAt(0).toUpperCase() + newResponderType.slice(1)} Unit ${Math.floor(Math.random() * 100)}`,
       type: newResponderType,
       status: Math.random() > 0.5 ? 'active' : 'en-route',
       position: {
-        latitude: 36.778259 + (Math.random() - 0.5) * 0.1,
-        longitude: -119.417931 + (Math.random() - 0.5) * 0.1,
-        locationName: 'New Deployment Area'
+        latitude: location.lat + (Math.random() - 0.5) * 0.05,
+        longitude: location.lng + (Math.random() - 0.5) * 0.05,
+        locationName: location.name
       }
     });
   }
@@ -194,32 +205,36 @@ const getUpdatedData = (): MapDataType => {
     const alertSeverities: Array<'critical' | 'warning' | 'info'> = ['critical', 'warning', 'info'];
     const newSeverity = alertSeverities[Math.floor(Math.random() * alertSeverities.length)];
     
+    // Ontario-specific alert templates
     const alertTemplates = {
       critical: {
         title: 'Critical Alert',
         messages: [
-          'New fire spot detected. Immediate evacuation required.',
-          'Road collapse reported. Avoid area immediately.',
-          'Flash flood warning issued. Move to higher ground.'
+          'New fire spot detected in Northern Ontario. Immediate evacuation required.',
+          'Highway 401 section closed due to incident. Seek alternate routes.',
+          'Flash flood warning issued for Eastern Ontario. Move to higher ground.'
         ]
       },
       warning: {
         title: 'Warning Alert',
         messages: [
-          'Wind direction changing. Fire spread possible.',
-          'Traffic congestion intensifying on evacuation route.',
-          'Medical resources limited in northeastern sector.'
+          'Wind direction changing in Muskoka region. Fire spread possible.',
+          'Traffic congestion intensifying on Highway 400.',
+          'Medical resources limited in Northwestern Ontario.'
         ]
       },
       info: {
         title: 'Information Update',
         messages: [
-          'New evacuation center opened at Community College.',
-          'Drone surveillance expanded to southwest region.',
-          'Weather forecast predicts rain in 6 hours.'
+          'New evacuation center opened at Toronto Convention Centre.',
+          'Drone surveillance expanded to Ottawa Valley region.',
+          'Weather forecast predicts rain in Northern Ontario in 6 hours.'
         ]
       }
     };
+    
+    // Ontario locations
+    const ontarioLocations = ['Toronto', 'Ottawa', 'Hamilton', 'London', 'Windsor', 'Kingston', 'Sudbury', 'Thunder Bay'];
     
     data.alerts.unshift({
       id: `alert-${Math.floor(Math.random() * 1000)}`,
@@ -227,7 +242,7 @@ const getUpdatedData = (): MapDataType => {
       title: alertTemplates[newSeverity].title,
       message: alertTemplates[newSeverity].messages[Math.floor(Math.random() * alertTemplates[newSeverity].messages.length)],
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      location: ['North Valley', 'South County', 'Eastern Hills', 'Western Forest'][Math.floor(Math.random() * 4)],
+      location: ontarioLocations[Math.floor(Math.random() * ontarioLocations.length)],
       isNew: true
     });
   }
