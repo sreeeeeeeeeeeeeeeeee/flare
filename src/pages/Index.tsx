@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import EmergencyMap from '@/components/EmergencyMap';
@@ -16,7 +15,6 @@ const Index = () => {
   const [mapData, setMapData] = useState(mockDataService.getInitialData());
   
   useEffect(() => {
-    // Simulate loading real-time data
     const timer = setTimeout(() => {
       setIsLoading(false);
       toast({
@@ -29,12 +27,10 @@ const Index = () => {
   }, [toast]);
   
   useEffect(() => {
-    // Simulate incoming real-time updates
     const updateInterval = setInterval(() => {
       const updatedData = mockDataService.getUpdatedData();
       setMapData(updatedData);
       
-      // Check for new alerts
       if (updatedData.alerts.some(alert => alert.isNew)) {
         toast({
           title: "New Alert",
@@ -52,7 +48,7 @@ const Index = () => {
       <header className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <AlertCircle className="h-6 w-6 text-danger" />
-          <h1 className="text-2xl font-bold">Safe Route Vision</h1>
+          <h1 className="text-2xl font-bold">FLARE</h1>
         </div>
         <div className="flex items-center gap-4">
           <div className="px-3 py-1 bg-danger text-white rounded-full text-sm font-medium animate-pulse-danger">
