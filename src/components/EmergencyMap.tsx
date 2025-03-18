@@ -1,13 +1,42 @@
 
 import { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { MapContainer, TileLayer, Marker, Popup, Polygon, Polyline, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapDataType } from '@/types/emergency';
 
-// IMPORTANT: Replace this with your actual Mapbox token in a production environment
-// Ideally, this would come from environment variables or a secure backend
-const MAPBOX_TOKEN = 'pk.eyJ1IjoiZXhhbXBsZXVzZXIiLCJhIjoiY2xydTk2cjhpMWllYTJrcWRza2FxdDVvNyJ9.mbHMrJqJJdL7_4nRfrCjVA';
+// Fix Leaflet marker icon issue
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+// Fix marker icons in Leaflet
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// Component to handle map data updates
+function MapUpdater({ data }: { data: MapDataType }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    // Center the map on California if no danger zones
+    if (data.dangerZones.length === 0) {
+      map.setView([36.778259, -119.417931], 6);
+    } else {
+      // Center on first danger zone
+      const coords = data.dangerZones[0].geometry.coordinates[0][0];
+      map.setView([coords[1], coords[0]], 8);
+    }
+  }, [map, data]);
+  
+  return null;
+}
 
 type EmergencyMapProps = {
   data: MapDataType;
@@ -15,224 +44,112 @@ type EmergencyMapProps = {
 };
 
 const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
-  const [mapboxTokenInput, setMapboxTokenInput] = useState(MAPBOX_TOKEN);
-  const [isTokenValid, setIsTokenValid] = useState(false);
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
-  
-  useEffect(() => {
-    if (!mapboxTokenInput || isLoading || !mapContainer.current || map.current) return;
-    
-    try {
-      mapboxgl.accessToken = mapboxTokenInput;
-      
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/dark-v11',
-        center: [-119.417931, 36.778259], // California center
-        zoom: 6,
-        pitch: 40,
-      });
-      
-      map.current.addControl(
-        new mapboxgl.NavigationControl({
-          visualizePitch: true,
-        }),
-        'top-right'
-      );
-      
-      map.current.on('load', () => {
-        setIsMapLoaded(true);
-        setIsTokenValid(true);
-        
-        if (map.current) {
-          // Add danger zone layer
-          map.current.addSource('danger-zones', {
-            type: 'geojson',
-            data: {
-              type: 'FeatureCollection',
-              features: []
-            }
-          });
-          
-          map.current.addLayer({
-            id: 'danger-zone-fill',
-            type: 'fill',
-            source: 'danger-zones',
-            paint: {
-              'fill-color': '#ea384c',
-              'fill-opacity': 0.3
-            }
-          });
-          
-          map.current.addLayer({
-            id: 'danger-zone-border',
-            type: 'line',
-            source: 'danger-zones',
-            paint: {
-              'line-color': '#ea384c',
-              'line-width': 2,
-              'line-dasharray': [2, 1]
-            }
-          });
-          
-          // Add evacuation routes layer
-          map.current.addSource('evacuation-routes', {
-            type: 'geojson',
-            data: {
-              type: 'FeatureCollection',
-              features: []
-            }
-          });
-          
-          map.current.addLayer({
-            id: 'evacuation-routes',
-            type: 'line',
-            source: 'evacuation-routes',
-            paint: {
-              'line-color': '#22c55e',
-              'line-width': 4,
-              'line-opacity': 0.8
-            }
-          });
-        }
-      });
-      
-      map.current.on('error', () => {
-        setIsTokenValid(false);
-      });
-      
-      return () => {
-        map.current?.remove();
-        map.current = null;
-      };
-    } catch (error) {
-      console.error("Error initializing map:", error);
-      setIsTokenValid(false);
-    }
-  }, [mapboxTokenInput, isLoading]);
-  
-  // Update map data when it changes
-  useEffect(() => {
-    if (!map.current || !isMapLoaded) return;
-    
-    // Update danger zones
-    const dangerZonesSource = map.current.getSource('danger-zones') as mapboxgl.GeoJSONSource;
-    if (dangerZonesSource) {
-      dangerZonesSource.setData({
-        type: 'FeatureCollection',
-        features: data.dangerZones.map(zone => ({
-          type: 'Feature',
-          geometry: zone.geometry,
-          properties: {
-            id: zone.id,
-            riskLevel: zone.riskLevel,
-            type: zone.type
-          }
-        }))
-      });
-    }
-    
-    // Update evacuation routes
-    const routesSource = map.current.getSource('evacuation-routes') as mapboxgl.GeoJSONSource;
-    if (routesSource) {
-      routesSource.setData({
-        type: 'FeatureCollection',
-        features: data.evacuationRoutes.map(route => ({
-          type: 'Feature',
-          geometry: route.geometry,
-          properties: {
-            id: route.id,
-            status: route.status,
-            transportMethods: route.transportMethods
-          }
-        }))
-      });
-    }
-    
-    // Update responder markers
-    const existingMarkerIds = Object.keys(markersRef.current);
-    
-    // Add or update markers
-    data.responders.forEach(responder => {
-      let marker = markersRef.current[responder.id];
-      
-      if (!marker) {
-        // Create custom marker element
-        const el = document.createElement('div');
-        el.className = 'flex flex-col items-center';
-        
-        const dot = document.createElement('div');
-        dot.className = `pulse-marker bg-${responder.type === 'drone' ? 'info' : responder.type === 'police' ? 'primary' : 'responder'}`;
-        el.appendChild(dot);
-        
-        const label = document.createElement('div');
-        label.className = 'text-xs font-semibold bg-background/80 px-1 rounded-sm -mt-1';
-        label.textContent = responder.name;
-        el.appendChild(label);
-        
-        marker = new mapboxgl.Marker(el)
-          .setLngLat([responder.position.longitude, responder.position.latitude])
-          .addTo(map.current!);
-          
-        markersRef.current[responder.id] = marker;
-      } else {
-        // Update existing marker position
-        marker.setLngLat([responder.position.longitude, responder.position.latitude]);
-      }
-    });
-    
-    // Remove markers that no longer exist in the data
-    const currentMarkerIds = data.responders.map(r => r.id);
-    existingMarkerIds.forEach(id => {
-      if (!currentMarkerIds.includes(id)) {
-        markersRef.current[id].remove();
-        delete markersRef.current[id];
-      }
-    });
-    
-  }, [data, isMapLoaded]);
-  
   if (isLoading) {
     return <Skeleton className="w-full h-full rounded-lg" />;
   }
-  
-  if (!isTokenValid) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full p-6">
-        <div className="text-danger mb-4">Invalid Mapbox Token</div>
-        <p className="text-sm text-muted-foreground mb-4 text-center">
-          Please enter a valid Mapbox token to display the emergency map.
-          You can get one by signing up at <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">mapbox.com</a>
-        </p>
-        <div className="w-full max-w-md">
-          <input
-            type="text"
-            value={mapboxTokenInput}
-            onChange={(e) => setMapboxTokenInput(e.target.value)}
-            placeholder="Enter your Mapbox token..."
-            className="w-full p-2 bg-background border border-input rounded-md mb-2"
-          />
-          <button 
-            onClick={() => {
-              if (map.current) {
-                map.current.remove();
-                map.current = null;
-              }
-              setIsMapLoaded(false);
-            }}
-            className="w-full p-2 bg-primary text-primary-foreground rounded-md"
-          >
-            Apply Token
-          </button>
-        </div>
-      </div>
-    );
-  }
-  
-  return <div ref={mapContainer} className="w-full h-full" />;
+
+  // Create custom marker icons for different responder types
+  const createResponderIcon = (type: string) => {
+    let color;
+    switch (type) {
+      case 'drone':
+        color = '#3b82f6'; // blue
+        break;
+      case 'police':
+        color = '#6366f1'; // indigo
+        break;
+      case 'fire':
+        color = '#ef4444'; // red
+        break;
+      case 'medical':
+        color = '#10b981'; // emerald
+        break;
+      default:
+        color = '#f59e0b'; // amber
+    }
+    
+    return L.divIcon({
+      html: `
+        <div style="background-color: ${color}; width: 10px; height: 10px; border-radius: 50%; animation: pulse 1.5s infinite;" class="pulse-marker"></div>
+        <div style="background-color: rgba(30, 30, 30, 0.8); color: white; font-size: 10px; padding: 2px 4px; border-radius: 2px; margin-top: -2px; white-space: nowrap;">${type}</div>
+      `,
+      className: 'custom-div-icon',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15]
+    });
+  };
+
+  return (
+    <MapContainer 
+      center={[36.778259, -119.417931]} 
+      zoom={6} 
+      style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
+      className="z-0"
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      
+      {/* Danger zones */}
+      {data.dangerZones.map((zone) => (
+        <Polygon
+          key={zone.id}
+          positions={zone.geometry.coordinates[0].map(coord => [coord[1], coord[0]])}
+          pathOptions={{
+            fillColor: '#ea384c',
+            fillOpacity: 0.3,
+            weight: 2,
+            opacity: 0.7,
+            color: '#ea384c',
+            dashArray: '5, 5'
+          }}
+        >
+          <Popup>
+            <div className="text-sm font-medium">{zone.type.toUpperCase()} Zone</div>
+            <div className="text-xs">Risk Level: {zone.riskLevel}</div>
+          </Popup>
+        </Polygon>
+      ))}
+      
+      {/* Evacuation routes */}
+      {data.evacuationRoutes.map((route) => (
+        <Polyline
+          key={route.id}
+          positions={route.geometry.coordinates.map(coord => [coord[1], coord[0]])}
+          pathOptions={{
+            color: route.status === 'open' ? '#22c55e' : route.status === 'congested' ? '#f59e0b' : '#ef4444',
+            weight: 4,
+            opacity: 0.8
+          }}
+        >
+          <Popup>
+            <div className="text-sm font-medium">Route: {route.startPoint} to {route.endPoint}</div>
+            <div className="text-xs">Status: {route.status}</div>
+            <div className="text-xs">Estimated Time: {route.estimatedTime} min</div>
+            <div className="text-xs">Transport: {route.transportMethods.join(', ')}</div>
+          </Popup>
+        </Polyline>
+      ))}
+      
+      {/* Responders */}
+      {data.responders.map((responder) => (
+        <Marker
+          key={responder.id}
+          position={[responder.position.latitude, responder.position.longitude]}
+          icon={createResponderIcon(responder.type)}
+        >
+          <Popup>
+            <div className="text-sm font-medium">{responder.name}</div>
+            <div className="text-xs">Status: {responder.status}</div>
+            <div className="text-xs">Location: {responder.position.locationName}</div>
+          </Popup>
+        </Marker>
+      ))}
+      
+      <MapUpdater data={data} />
+    </MapContainer>
+  );
 };
 
 export default EmergencyMap;

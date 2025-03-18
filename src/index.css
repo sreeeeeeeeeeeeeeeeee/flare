@@ -54,20 +54,26 @@
     @apply bg-background text-foreground;
   }
 
-  .mapboxgl-canvas {
+  /* Leaflet Customizations */
+  .leaflet-container {
     @apply rounded-lg;
+    background-color: #1f2937;
   }
 
-  .mapboxgl-ctrl-top-right {
-    @apply top-4 right-4;
-  }
-
-  .mapboxgl-ctrl-group {
+  .leaflet-control {
     @apply bg-card border-border shadow-lg;
   }
 
-  .mapboxgl-ctrl button {
-    @apply text-foreground;
+  .leaflet-popup-content-wrapper {
+    @apply bg-card text-foreground border-border shadow-lg rounded-md;
+  }
+
+  .leaflet-popup-tip {
+    @apply bg-card;
+  }
+
+  .leaflet-control-zoom a {
+    @apply text-foreground hover:bg-secondary;
   }
 }
 
@@ -78,4 +84,26 @@
 
 .pulse-marker {
   @apply w-4 h-4 rounded-full animate-pulse-danger;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+  }
+  
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.custom-div-icon {
+  background: transparent;
+  border: none;
 }
