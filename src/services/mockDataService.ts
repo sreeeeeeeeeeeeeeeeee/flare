@@ -62,6 +62,19 @@ const initialData: MapDataType = {
           [-80.2, 45.5],
         ]]
       }
+        {
+      id: 'zone-2',
+      type: 'wildfire',
+      risklevel: 'high',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          [43.8, -79.7],
+          [43.9, -79.7],
+          [43.9, -79.6],
+          [43.8, -79.6],
+          [43.8, -79.7],
+      ]]    
     }
   ],
   evacuationRoutes: [
