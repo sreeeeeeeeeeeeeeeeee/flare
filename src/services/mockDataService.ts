@@ -75,8 +75,8 @@ const initialData: MapDataType = {
           [43.8, -79.6],
           [43.8, -79.7],
       ]]    
-    }
-  ],
+    },
+  ]
   evacuationRoutes: [
     {
       id: 'route-1',
