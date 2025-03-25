@@ -31,7 +31,7 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
     setVideoError(false);
     
     // Play/pause video based on isPlaying state
-    if (videoRef.current && isVideoSource(getCurrentFeedSrc())) {
+    if (videoRef.current && isVideoSource(getCurrentFeedSrc()) && !isYouTubeURL(getCurrentFeedSrc())) {
       if (isPlaying) {
         videoRef.current.play().catch(err => {
           console.error("Video play error:", err);
@@ -45,6 +45,26 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
 
   const isVideoSource = (src: string): boolean => {
     return src.endsWith('.mp4') || src.includes('video') || src.includes('mixkit');
+  };
+
+  const isYouTubeURL = (url: string): boolean => {
+    return url.includes('youtube.com') || url.includes('youtu.be');
+  };
+
+  const getYouTubeEmbedURL = (url: string): string => {
+    // Extract video ID from YouTube URL
+    let videoId = '';
+    
+    if (url.includes('youtube.com/watch')) {
+      // Regular YouTube URL
+      const urlParams = new URLSearchParams(url.split('?')[1]);
+      videoId = urlParams.get('v') || '';
+    } else if (url.includes('youtu.be')) {
+      // Shortened YouTube URL
+      videoId = url.split('/').pop() || '';
+    }
+    
+    return `https://www.youtube.com/embed/${videoId}?autoplay=${isPlaying ? '1' : '0'}&mute=1&controls=1&loop=1`;
   };
 
   const getCurrentFeedSrc = () => {
@@ -103,7 +123,18 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
       );
     }
     
-    if (isVideoSource(currentSrc)) {
+    if (isYouTubeURL(currentSrc)) {
+      return (
+        <iframe
+          src={getYouTubeEmbedURL(currentSrc)}
+          className="object-cover w-full h-full"
+          frameBorder="0"
+          allowFullScreen
+          title="YouTube video player"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        ></iframe>
+      );
+    } else if (isVideoSource(currentSrc)) {
       return (
         <video 
           ref={videoRef}

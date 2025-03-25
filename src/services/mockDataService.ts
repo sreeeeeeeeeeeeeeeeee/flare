@@ -1,4 +1,3 @@
-
 import { MapDataType, EvacuationRouteType } from '@/types/emergency';
 
 // Sample images for development - in production these would be actual video feeds
@@ -10,8 +9,9 @@ const sampleImages = [
   'https://images.unsplash.com/photo-1625718645313-d2401a97cedd?q=80&w=2070',
 ];
 
-// Sample drone videos
+// Sample videos
 const droneVideos = [
+  'https://youtu.be/uRFrHhBKAto', // Updated to YouTube link
   '/videos/video1.mp4', // Path to your video in the public folder
   'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-forest-surrounded-by-clouds-42491-large.mp4',
   'https://assets.mixkit.co/videos/preview/mixkit-aerial-shot-of-a-car-driving-through-a-mountain-road-41537-large.mp4',
@@ -240,7 +240,7 @@ const initialData: MapDataType = {
     {
       id: 'video-1',
       type: 'drone',
-      source: droneVideos[0], // Using your local video
+      source: droneVideos[0], // Using the YouTube URL
       thumbnail: sampleImages[0],
       location: 'Northern Ontario Wildfire Zone',
       hasAlert: true,
