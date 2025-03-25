@@ -61,21 +61,23 @@ const initialData: MapDataType = {
           [-80.2, 45.6],
           [-80.2, 45.5],
         ]]
-      },
-        {
+      }
+    },
+    {
       id: 'zone-2',
       type: 'wildfire',
-      risklevel: 'high',
+      riskLevel: 'high',
       geometry: {
         type: 'Polygon',
         coordinates: [[
-          [43.8, -79.7],
-          [43.9, -79.7],
-          [43.9, -79.6],
-          [43.8, -79.6],
-          [43.8, -79.7],
-      ]]    
-    },
+          [-79.55, 43.82],
+          [-79.58, 43.82],
+          [-79.58, 43.85],
+          [-79.55, 43.85],
+          [-79.55, 43.82],
+        ]]
+      }
+    }
   ],
   evacuationRoutes: [
     {
@@ -129,6 +131,15 @@ const initialData: MapDataType = {
       time: '13:30',
       location: 'Highway 401',
       isNew: false
+    },
+    {
+      id: 'alert-3',
+      severity: 'critical',
+      title: 'Hazardous Area',
+      message: 'New danger zone identified in Vaughan. Please avoid the area.',
+      time: '14:05',
+      location: 'Vaughan',
+      isNew: true
     }
   ],
   videoFeeds: [
