@@ -1,22 +1,7 @@
 import { MapDataType, EvacuationRouteType } from '@/types/emergency';
 
-// Sample images for development - in production these would be actual video feeds
-const sampleImages = [
-  'https://images.unsplash.com/photo-1601791074012-d4e0ee30d77a?q=80&w=2070',
-  'https://images.unsplash.com/photo-1542332213-9b5a5a3fad35?q=80&w=2070',
-  'https://images.unsplash.com/photo-1493674860190-0ca468d6d60a?q=80&w=2070',
-  'https://images.unsplash.com/photo-1598021503475-7c8b556dde56?q=80&w=2070',
-  'https://images.unsplash.com/photo-1625718645313-d2401a97cedd?q=80&w=2070',
-];
-
-// Sample videos
-const droneVideos = [
-  'https://youtu.be/uRFrHhBKAto', // Updated to YouTube link
-  '/videos/video1.mp4', // Path to your video in the public folder
-  'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-forest-surrounded-by-clouds-42491-large.mp4',
-  'https://assets.mixkit.co/videos/preview/mixkit-aerial-shot-of-a-car-driving-through-a-mountain-road-41537-large.mp4',
-  'https://assets.mixkit.co/videos/preview/mixkit-a-truck-on-a-winding-road-seen-from-above-42025-large.mp4',
-];
+// Sample YouTube video - keeping only one video feed
+const droneVideo = 'https://youtu.be/uRFrHhBKAto';
 
 // Ontario cities with their coordinates
 const ontarioCities = [
@@ -240,30 +225,10 @@ const initialData: MapDataType = {
     {
       id: 'video-1',
       type: 'drone',
-      source: droneVideos[0], // Using the YouTube URL
-      thumbnail: sampleImages[0],
+      source: droneVideo,
       location: 'Northern Ontario Wildfire Zone',
       hasAlert: true,
-      relatedFeeds: [
-        {
-          id: 'video-1-1',
-          source: droneVideos[1],
-          thumbnail: sampleImages[1],
-          location: 'Eastern Edge of Fire'
-        },
-        {
-          id: 'video-1-2',
-          source: droneVideos[2],
-          thumbnail: sampleImages[2],
-          location: 'Highway 11 Evacuation'
-        },
-        {
-          id: 'video-1-3',
-          source: droneVideos[3],
-          thumbnail: sampleImages[3],
-          location: 'Coastal Evacuation Route'
-        }
-      ]
+      relatedFeeds: [] // Empty related feeds
     }
   ]
 };
