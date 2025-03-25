@@ -64,7 +64,8 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
       videoId = url.split('/').pop() || '';
     }
     
-    return `https://www.youtube.com/embed/${videoId}?autoplay=${isPlaying ? '1' : '0'}&mute=1&controls=1&loop=1`;
+    // Added playlist parameter with the video ID to enable looping on YouTube
+    return `https://www.youtube.com/embed/${videoId}?autoplay=${isPlaying ? '1' : '0'}&mute=1&controls=1&loop=1&playlist=${videoId}`;
   };
 
   const getCurrentFeedSrc = () => {
