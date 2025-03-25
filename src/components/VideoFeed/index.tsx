@@ -17,9 +17,14 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
   const [videoError, setVideoError] = useState(false);
   
   useEffect(() => {
+    // Only set up interval if there are related feeds
+    if (currentFeed.relatedFeeds.length === 0) {
+      return; // Early return if no related feeds
+    }
+    
     // Simulate video feed changes
     const interval = setInterval(() => {
-      if (isPlaying && currentFeed.relatedFeeds.length > 0) {
+      if (isPlaying) {
         setFeedIndex(prevIndex => (prevIndex + 1) % (currentFeed.relatedFeeds.length + 1));
       }
     }, 10000);
@@ -33,24 +38,36 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
   }, [feedIndex]);
 
   const getCurrentFeedSrc = () => {
-    if (feedIndex === 0) {
+    // Always return the main feed source if there are no related feeds
+    // or if we're at index 0
+    if (feedIndex === 0 || currentFeed.relatedFeeds.length === 0) {
       return currentFeed.source;
     }
-    return currentFeed.relatedFeeds[feedIndex - 1].source;
+    
+    // Make sure we don't try to access an index that doesn't exist
+    const relatedFeedIndex = Math.min(feedIndex - 1, currentFeed.relatedFeeds.length - 1);
+    return currentFeed.relatedFeeds[relatedFeedIndex]?.source || currentFeed.source;
   };
   
   const getCurrentFeedLocation = () => {
-    if (feedIndex === 0) {
+    if (feedIndex === 0 || currentFeed.relatedFeeds.length === 0) {
       return currentFeed.location;
     }
-    return currentFeed.relatedFeeds[feedIndex - 1].location;
+    
+    const relatedFeedIndex = Math.min(feedIndex - 1, currentFeed.relatedFeeds.length - 1);
+    return currentFeed.relatedFeeds[relatedFeedIndex]?.location || currentFeed.location;
   };
 
   const getThumbnailSrc = () => {
-    if (feedIndex === 0) {
+    // If there are no related feeds or current feed doesn't have a thumbnail,
+    // return the current feed source
+    if (feedIndex === 0 || currentFeed.relatedFeeds.length === 0) {
       return currentFeed.thumbnail || currentFeed.source;
     }
-    return currentFeed.relatedFeeds[feedIndex - 1].thumbnail || currentFeed.relatedFeeds[feedIndex - 1].source;
+    
+    const relatedFeedIndex = Math.min(feedIndex - 1, currentFeed.relatedFeeds.length - 1);
+    const relatedFeed = currentFeed.relatedFeeds[relatedFeedIndex];
+    return relatedFeed?.thumbnail || relatedFeed?.source || currentFeed.source;
   };
 
   const toggleVideoFeed = () => {
