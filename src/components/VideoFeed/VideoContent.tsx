@@ -1,4 +1,3 @@
-
 import { AlertTriangle, CameraOff } from 'lucide-react';
 import { useRef, useEffect } from 'react';
 
@@ -42,7 +41,8 @@ const VideoContent = ({
       videoId = url.split('/').pop() || '';
     }
     
-    // Added playlist parameter with the video ID to enable looping on YouTube
+    // Add parameters for looping and autoplay
+    // The loop=1 and playlist={videoId} parameters ensure the video loops
     return `https://www.youtube.com/embed/${videoId}?autoplay=${isPlaying ? '1' : '0'}&mute=1&controls=1&loop=1&playlist=${videoId}`;
   };
   
