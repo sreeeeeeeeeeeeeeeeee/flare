@@ -1,3 +1,4 @@
+
 import { AlertTriangle, CameraOff } from 'lucide-react';
 import { useRef, useEffect } from 'react';
 
@@ -90,21 +91,23 @@ const VideoContent = ({
   
   if (isYouTubeURL(currentSrc)) {
     return (
-      <iframe
-        src={getYouTubeEmbedURL(currentSrc)}
-        className="object-cover w-full h-full"
-        frameBorder="0"
-        allowFullScreen
-        title="YouTube video player"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      ></iframe>
+      <div className="w-full h-full flex items-center justify-center bg-black">
+        <iframe
+          src={getYouTubeEmbedURL(currentSrc)}
+          className="w-full h-full"
+          frameBorder="0"
+          allowFullScreen
+          title="YouTube video player"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        ></iframe>
+      </div>
     );
   } else if (isVideoSource(currentSrc)) {
     return (
       <video 
         ref={videoRef}
         src={currentSrc} 
-        className="object-cover w-full h-full"
+        className="w-full h-full object-contain"
         autoPlay
         muted
         loop
@@ -118,7 +121,7 @@ const VideoContent = ({
     <img 
       src={currentSrc} 
       alt="Video feed" 
-      className="object-cover w-full h-full"
+      className="w-full h-full object-contain"
     />
   );
 };

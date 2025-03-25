@@ -78,7 +78,7 @@
 }
 
 .video-feed {
-  @apply relative rounded-lg overflow-hidden;
+  @apply relative rounded-lg overflow-hidden flex items-center justify-center bg-black;
   aspect-ratio: 16 / 9;
 }
 
