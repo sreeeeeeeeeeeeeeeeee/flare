@@ -61,7 +61,7 @@ const initialData: MapDataType = {
           [-80.2, 45.6],
           [-80.2, 45.5],
         ]]
-      }
+      },
         {
       id: 'zone-2',
       type: 'wildfire',
@@ -76,7 +76,7 @@ const initialData: MapDataType = {
           [43.8, -79.7],
       ]]    
     },
-  ]
+  ],
   evacuationRoutes: [
     {
       id: 'route-1',
