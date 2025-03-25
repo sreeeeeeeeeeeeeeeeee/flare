@@ -140,7 +140,16 @@ const initialData: MapDataType = {
       time: '14:05',
       location: 'Vaughan',
       isNew: true
-    }
+    },
+    {
+    id: 'alert 4', 
+    severity: 'warning',
+    title: 'Traffic Congestion',
+    message: 'Heavy traffic on Highway 141 due to evacuation. Seek an alternative route.',
+    time: '18:30',
+    location: 'Highway 141',
+      isNew: false
+      }
   ],
   videoFeeds: [
     {
