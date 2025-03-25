@@ -94,7 +94,7 @@ const VideoContent = ({
       <div className="w-full h-full flex items-center justify-center bg-black">
         <iframe
           src={getYouTubeEmbedURL(currentSrc)}
-          className="w-full h-full"
+          className="w-full h-full max-w-[95%] max-h-[95%]"
           frameBorder="0"
           allowFullScreen
           title="YouTube video player"
@@ -104,25 +104,29 @@ const VideoContent = ({
     );
   } else if (isVideoSource(currentSrc)) {
     return (
-      <video 
-        ref={videoRef}
-        src={currentSrc} 
-        className="w-full h-full object-contain"
-        autoPlay
-        muted
-        loop
-        playsInline
-        onError={() => setVideoError(true)}
-      />
+      <div className="w-full h-full flex items-center justify-center bg-black">
+        <video 
+          ref={videoRef}
+          src={currentSrc} 
+          className="max-w-[95%] max-h-[95%] object-contain"
+          autoPlay
+          muted
+          loop
+          playsInline
+          onError={() => setVideoError(true)}
+        />
+      </div>
     );
   }
   
   return (
-    <img 
-      src={currentSrc} 
-      alt="Video feed" 
-      className="w-full h-full object-contain"
-    />
+    <div className="w-full h-full flex items-center justify-center bg-black">
+      <img 
+        src={currentSrc} 
+        alt="Video feed" 
+        className="max-w-[95%] max-h-[95%] object-contain"
+      />
+    </div>
   );
 };
 
