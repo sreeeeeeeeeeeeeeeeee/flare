@@ -1,7 +1,8 @@
 
-import { VideoIcon, AlertTriangle } from 'lucide-react';
+import { VideoIcon, AlertTriangle, Camera, CameraOff } from 'lucide-react';
 import { VideoFeedType } from '@/types/emergency';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button';
 
 type VideoFeedProps = {
   currentFeed: VideoFeedType;
@@ -10,6 +11,8 @@ type VideoFeedProps = {
 const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [feedIndex, setFeedIndex] = useState(0);
+  const [showVideo, setShowVideo] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
   
   useEffect(() => {
     // Simulate video feed changes
@@ -21,6 +24,19 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
     
     return () => clearInterval(interval);
   }, [currentFeed.relatedFeeds.length, isPlaying]);
+
+  useEffect(() => {
+    // Play/pause video based on isPlaying state
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.play().catch(err => {
+          console.error("Video play error:", err);
+        });
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [isPlaying, feedIndex]);
 
   const getCurrentFeedSrc = () => {
     if (feedIndex === 0) {
@@ -36,6 +52,10 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
     return currentFeed.relatedFeeds[feedIndex - 1].location;
   };
 
+  const toggleVideoFeed = () => {
+    setShowVideo(prev => !prev);
+  };
+
   return (
     <div className="flex flex-col border border-border rounded-lg bg-card h-full overflow-hidden">
       <div className="p-3 border-b border-border flex justify-between items-center">
@@ -44,23 +64,53 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
           <h3 className="font-medium text-sm">Live Video Feed</h3>
         </div>
         <div className="flex gap-2">
-          <button 
+          <Button 
+            variant="ghost"
+            size="icon"
+            onClick={toggleVideoFeed}
+            title={showVideo ? "Disable feed" : "Enable feed"}
+          >
+            {showVideo ? <Camera className="h-4 w-4" /> : <CameraOff className="h-4 w-4" />}
+          </Button>
+          <Button 
+            variant="secondary"
+            size="sm"
             onClick={() => setIsPlaying(!isPlaying)}
-            className="text-xs px-2 py-1 rounded bg-secondary hover:bg-secondary/80"
+            className="text-xs px-2 py-1 rounded"
           >
             {isPlaying ? 'Pause' : 'Play'}
-          </button>
+          </Button>
         </div>
       </div>
       
       <div className="relative flex-grow">
         <div className="video-feed h-full">
-          {/* This would be a real video feed in a production environment */}
-          <img 
-            src={getCurrentFeedSrc()} 
-            alt="Video feed" 
-            className="object-cover w-full h-full"
-          />
+          {showVideo ? (
+            getCurrentFeedSrc().endsWith('.mp4') ? (
+              <video 
+                ref={videoRef}
+                src={getCurrentFeedSrc()} 
+                className="object-cover w-full h-full"
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            ) : (
+              <img 
+                src={getCurrentFeedSrc()} 
+                alt="Video feed" 
+                className="object-cover w-full h-full"
+              />
+            )
+          ) : (
+            <div className="flex items-center justify-center w-full h-full bg-black/90">
+              <div className="text-center text-white">
+                <CameraOff className="mx-auto mb-2 h-10 w-10 opacity-50" />
+                <p className="text-sm">Feed disabled</p>
+              </div>
+            </div>
+          )}
           
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
             <div className="flex items-center justify-between">
