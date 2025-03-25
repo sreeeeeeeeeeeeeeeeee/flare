@@ -70,6 +70,21 @@ const initialData: MapDataType = {
       geometry: {
         type: 'Polygon',
         coordinates: [[
+          [43.8, -79.7],
+          [43.9, -79.7],
+          [43.9, -79.6],
+          [43.8, -79.6],
+          [43.8, -79.7],
+        ]]    
+      }
+    },
+    {
+      id: 'zone-3',
+      type: 'wildfire',
+      riskLevel: 'high',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
           [-79.55, 43.82],
           [-79.58, 43.82],
           [-79.58, 43.85],
