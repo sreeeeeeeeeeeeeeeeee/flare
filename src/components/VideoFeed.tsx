@@ -12,6 +12,7 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [feedIndex, setFeedIndex] = useState(0);
   const [showVideo, setShowVideo] = useState(true);
+  const [videoError, setVideoError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   useEffect(() => {
@@ -26,17 +27,25 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
   }, [currentFeed.relatedFeeds.length, isPlaying]);
 
   useEffect(() => {
+    // Reset error state when feed changes
+    setVideoError(false);
+    
     // Play/pause video based on isPlaying state
-    if (videoRef.current) {
+    if (videoRef.current && isVideoSource(getCurrentFeedSrc())) {
       if (isPlaying) {
         videoRef.current.play().catch(err => {
           console.error("Video play error:", err);
+          setVideoError(true);
         });
       } else {
         videoRef.current.pause();
       }
     }
   }, [isPlaying, feedIndex]);
+
+  const isVideoSource = (src: string): boolean => {
+    return src.endsWith('.mp4') || src.includes('video') || src.includes('mixkit');
+  };
 
   const getCurrentFeedSrc = () => {
     if (feedIndex === 0) {
@@ -52,8 +61,70 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
     return currentFeed.relatedFeeds[feedIndex - 1].location;
   };
 
+  const getThumbnailSrc = () => {
+    if (feedIndex === 0) {
+      return currentFeed.thumbnail || currentFeed.source;
+    }
+    return currentFeed.relatedFeeds[feedIndex - 1].thumbnail || currentFeed.relatedFeeds[feedIndex - 1].source;
+  };
+
   const toggleVideoFeed = () => {
     setShowVideo(prev => !prev);
+  };
+
+  const renderVideoContent = () => {
+    const currentSrc = getCurrentFeedSrc();
+    
+    if (!showVideo) {
+      return (
+        <div className="flex items-center justify-center w-full h-full bg-black/90">
+          <div className="text-center text-white">
+            <CameraOff className="mx-auto mb-2 h-10 w-10 opacity-50" />
+            <p className="text-sm">Feed disabled</p>
+          </div>
+        </div>
+      );
+    }
+    
+    if (videoError) {
+      return (
+        <div className="flex items-center justify-center w-full h-full bg-black/80">
+          <div className="text-center text-white">
+            <AlertTriangle className="mx-auto mb-2 h-10 w-10 text-danger" />
+            <p className="text-sm">Video feed unavailable</p>
+            <img 
+              src={getThumbnailSrc()} 
+              alt="Video thumbnail" 
+              className="object-cover w-full h-full absolute top-0 left-0 opacity-30 z-0"
+              style={{ filter: 'blur(4px)' }}
+            />
+          </div>
+        </div>
+      );
+    }
+    
+    if (isVideoSource(currentSrc)) {
+      return (
+        <video 
+          ref={videoRef}
+          src={currentSrc} 
+          className="object-cover w-full h-full"
+          autoPlay
+          muted
+          loop
+          playsInline
+          onError={() => setVideoError(true)}
+        />
+      );
+    }
+    
+    return (
+      <img 
+        src={currentSrc} 
+        alt="Video feed" 
+        className="object-cover w-full h-full"
+      />
+    );
   };
 
   return (
@@ -85,32 +156,7 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
       
       <div className="relative flex-grow">
         <div className="video-feed h-full">
-          {showVideo ? (
-            getCurrentFeedSrc().endsWith('.mp4') ? (
-              <video 
-                ref={videoRef}
-                src={getCurrentFeedSrc()} 
-                className="object-cover w-full h-full"
-                autoPlay
-                muted
-                loop
-                playsInline
-              />
-            ) : (
-              <img 
-                src={getCurrentFeedSrc()} 
-                alt="Video feed" 
-                className="object-cover w-full h-full"
-              />
-            )
-          ) : (
-            <div className="flex items-center justify-center w-full h-full bg-black/90">
-              <div className="text-center text-white">
-                <CameraOff className="mx-auto mb-2 h-10 w-10 opacity-50" />
-                <p className="text-sm">Feed disabled</p>
-              </div>
-            </div>
-          )}
+          {renderVideoContent()}
           
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
             <div className="flex items-center justify-between">
