@@ -130,7 +130,7 @@ const initialData: MapDataType = {
       message: 'Heavy traffic on Highway 401 due to evacuation. Seek alternative routes.',
       time: '13:30',
       location: 'Highway 401',
-      isNew: false
+      isNew: true
     },
     {
       id: 'alert-3',
