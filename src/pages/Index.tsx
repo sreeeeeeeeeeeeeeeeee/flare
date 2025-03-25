@@ -1,5 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import EmergencyMap from '@/components/EmergencyMap';
 import VideoFeed from '@/components/VideoFeed';
 import AlertsPanel from '@/components/AlertsPanel';
@@ -44,8 +46,8 @@ const Index = () => {
   }, [toast]);
 
   return (
-    <div className="min-h-screen h-screen flex flex-col p-4 gap-4 overflow-hidden">
-      <header className="flex items-center justify-between mb-2">
+    <div className="min-h-screen h-full flex flex-col p-4 gap-4 overflow-auto">
+      <header className="flex items-center justify-between mb-2 sticky top-0 z-10 bg-background py-2">
         <div className="flex items-center gap-2">
           <AlertCircle className="h-6 w-6 text-danger" />
           <h1 className="text-2xl font-bold">FLARE</h1>
@@ -60,28 +62,34 @@ const Index = () => {
         </div>
       </header>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow overflow-hidden">
-        <div className="col-span-1 md:col-span-2 flex flex-col gap-4 overflow-hidden">
-          <div className="flex-grow relative overflow-hidden rounded-lg border border-border bg-card">
-            <EmergencyMap data={mapData} isLoading={isLoading} />
+      <ScrollArea className="flex-grow">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-8">
+          <div className="col-span-1 md:col-span-2 flex flex-col gap-4">
+            <div className="h-[400px] relative overflow-hidden rounded-lg border border-border bg-card">
+              <EmergencyMap data={mapData} isLoading={isLoading} />
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <VideoFeed currentFeed={mapData.videoFeeds[0]} />
+              <EvacuationRoutes routes={mapData.evacuationRoutes} />
+            </div>
           </div>
           
-          <div className="h-1/3 grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <VideoFeed currentFeed={mapData.videoFeeds[0]} />
-            <EvacuationRoutes routes={mapData.evacuationRoutes} />
+          <div className="flex flex-col gap-4">
+            <StatusPanel 
+              dangerZones={mapData.dangerZones.length} 
+              responders={mapData.responders.length}
+              safeRoutes={mapData.evacuationRoutes.length}
+            />
+            <ScrollArea className="h-[300px] rounded-lg border border-border">
+              <AlertsPanel alerts={mapData.alerts} className="p-2" />
+            </ScrollArea>
+            <ScrollArea className="h-[300px] rounded-lg border border-border"> 
+              <ResponderList responders={mapData.responders} className="p-2" />
+            </ScrollArea>
           </div>
         </div>
-        
-        <div className="flex flex-col gap-4 overflow-hidden">
-          <StatusPanel 
-            dangerZones={mapData.dangerZones.length} 
-            responders={mapData.responders.length}
-            safeRoutes={mapData.evacuationRoutes.length}
-          />
-          <AlertsPanel alerts={mapData.alerts} className="flex-grow overflow-y-auto" />
-          <ResponderList responders={mapData.responders} className="h-1/3 overflow-y-auto" />
-        </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 };
