@@ -92,47 +92,40 @@ const VideoContent = ({
   if (isYouTubeURL(currentSrc)) {
     return (
       <div className="w-full h-full flex items-start justify-start bg-black">
-        <div className="w-full h-full max-w-[70%] max-h-[70%]">
-          <iframe
-            src={getYouTubeEmbedURL(currentSrc)}
-            className="w-full h-full"
-            frameBorder="0"
-            allowFullScreen
-            title="YouTube video player"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            style={{ maxWidth: '100%', maxHeight: '100%' }}
-          ></iframe>
-        </div>
+        <iframe
+          src={getYouTubeEmbedURL(currentSrc)}
+          className="w-[70%] h-[70%]"
+          frameBorder="0"
+          allowFullScreen
+          title="YouTube video player"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        ></iframe>
       </div>
     );
   } else if (isVideoSource(currentSrc)) {
     return (
       <div className="w-full h-full flex items-start justify-start bg-black">
-        <div className="max-w-[70%] max-h-[70%]">
-          <video 
-            ref={videoRef}
-            src={currentSrc} 
-            className="max-w-full max-h-full object-contain"
-            autoPlay
-            muted
-            loop
-            playsInline
-            onError={() => setVideoError(true)}
-          />
-        </div>
+        <video 
+          ref={videoRef}
+          src={currentSrc} 
+          className="w-[70%] h-[70%] object-contain"
+          autoPlay
+          muted
+          loop
+          playsInline
+          onError={() => setVideoError(true)}
+        />
       </div>
     );
   }
   
   return (
     <div className="w-full h-full flex items-start justify-start bg-black">
-      <div className="max-w-[70%] max-h-[70%]">
-        <img 
-          src={currentSrc} 
-          alt="Video feed" 
-          className="max-w-full max-h-full object-contain"
-        />
-      </div>
+      <img 
+        src={currentSrc} 
+        alt="Video feed" 
+        className="w-[70%] h-[70%] object-contain"
+      />
     </div>
   );
 };

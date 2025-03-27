@@ -94,7 +94,7 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
       </div>
       
       <div className="relative flex-grow">
-        <div className="video-feed h-full">
+        <div className="h-full w-full">
           <VideoContent 
             currentSrc={getCurrentFeedSrc()}
             showVideo={showVideo}
