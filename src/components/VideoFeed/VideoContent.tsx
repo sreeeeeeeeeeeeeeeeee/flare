@@ -92,7 +92,7 @@ const VideoContent = ({
   if (isYouTubeURL(currentSrc)) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-black">
-        <div className="w-full h-full max-w-[90%] max-h-[90%] flex items-center justify-center">
+        <div className="w-full h-full max-w-[70%] max-h-[70%] flex items-center justify-center">
           <iframe
             src={getYouTubeEmbedURL(currentSrc)}
             className="w-full h-full"
@@ -108,7 +108,7 @@ const VideoContent = ({
   } else if (isVideoSource(currentSrc)) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-black">
-        <div className="max-w-[90%] max-h-[90%] flex items-center justify-center">
+        <div className="max-w-[70%] max-h-[70%] flex items-center justify-center">
           <video 
             ref={videoRef}
             src={currentSrc} 
@@ -126,7 +126,7 @@ const VideoContent = ({
   
   return (
     <div className="w-full h-full flex items-center justify-center bg-black">
-      <div className="max-w-[90%] max-h-[90%] flex items-center justify-center">
+      <div className="max-w-[70%] max-h-[70%] flex items-center justify-center">
         <img 
           src={currentSrc} 
           alt="Video feed" 
