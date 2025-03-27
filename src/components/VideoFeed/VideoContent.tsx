@@ -94,7 +94,7 @@ const VideoContent = ({
       <div className="w-full h-full flex items-start justify-start bg-black">
         <iframe
           src={getYouTubeEmbedURL(currentSrc)}
-          className="w-[70%] h-[70%]"
+          className="w-[90%] h-[90%]"
           frameBorder="0"
           allowFullScreen
           title="YouTube video player"
@@ -108,7 +108,7 @@ const VideoContent = ({
         <video 
           ref={videoRef}
           src={currentSrc} 
-          className="w-[70%] h-[70%] object-contain"
+          className="w-[90%] h-[90%] object-contain"
           autoPlay
           muted
           loop
@@ -124,7 +124,7 @@ const VideoContent = ({
       <img 
         src={currentSrc} 
         alt="Video feed" 
-        className="w-[70%] h-[70%] object-contain"
+        className="w-[90%] h-[90%] object-contain"
       />
     </div>
   );
