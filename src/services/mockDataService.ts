@@ -273,7 +273,7 @@ const getUpdatedData = (): MapDataType => {
     responder.position.longitude += (Math.random() - 0.5) * 0.01;
   });
   
-  // Sometimes add a new responder
+  // Sometimes add a new responder (30% chance)
   if (Math.random() > 0.7) {
     const newResponderTypes: Array<'drone' | 'police' | 'fire' | 'medical'> = ['drone', 'police', 'fire', 'medical'];
     const newResponderType = newResponderTypes[Math.floor(Math.random() * newResponderTypes.length)];
@@ -293,14 +293,71 @@ const getUpdatedData = (): MapDataType => {
     });
   }
   
-  // Sometimes update danger zone
+  // Sometimes remove a responder (10% chance, if we have more than 3 responders)
+  if (Math.random() > 0.9 && data.responders.length > 3) {
+    const indexToRemove = Math.floor(Math.random() * data.responders.length);
+    data.responders.splice(indexToRemove, 1);
+  }
+  
+  // Sometimes update danger zone shape (20% chance)
   if (Math.random() > 0.8) {
-    data.dangerZones[0].geometry.coordinates[0].forEach((coord, index) => {
-      if (index > 0 && index < data.dangerZones[0].geometry.coordinates[0].length - 1) {
-        coord[0] += (Math.random() - 0.5) * 0.02;
-        coord[1] += (Math.random() - 0.5) * 0.02;
+    data.dangerZones.forEach(zone => {
+      zone.geometry.coordinates[0].forEach((coord, index) => {
+        if (index > 0 && index < zone.geometry.coordinates[0].length - 1) {
+          coord[0] += (Math.random() - 0.5) * 0.02;
+          coord[1] += (Math.random() - 0.5) * 0.02;
+        }
+      });
+    });
+  }
+  
+  // Sometimes add a new danger zone (15% chance, max 5 zones)
+  if (Math.random() > 0.85 && data.dangerZones.length < 5) {
+    const randomCity = ontarioCities[Math.floor(Math.random() * ontarioCities.length)];
+    const zoneTypes: Array<'wildfire' | 'flood' | 'chemical' | 'other'> = ['wildfire', 'flood', 'chemical', 'other'];
+    const riskLevels: Array<'high' | 'medium' | 'low'> = ['high', 'medium', 'low'];
+    
+    // Create a polygon around the city
+    const radius = 0.05 + Math.random() * 0.1; // Random radius between 0.05 and 0.15 degrees
+    const sides = 5 + Math.floor(Math.random() * 3); // 5-7 sides for the polygon
+    const coordinates = [];
+    
+    for (let i = 0; i < sides; i++) {
+      const angle = (i / sides) * Math.PI * 2;
+      const lng = randomCity.lng + Math.cos(angle) * radius * (0.8 + Math.random() * 0.4); // Add some irregularity
+      const lat = randomCity.lat + Math.sin(angle) * radius * (0.8 + Math.random() * 0.4);
+      coordinates.push([lng, lat]);
+    }
+    
+    // Close the polygon
+    coordinates.push([...coordinates[0]]);
+    
+    data.dangerZones.push({
+      id: `zone-${Math.floor(Math.random() * 1000)}`,
+      type: zoneTypes[Math.floor(Math.random() * zoneTypes.length)],
+      riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
+      geometry: {
+        type: 'Polygon',
+        coordinates: [coordinates]
       }
     });
+    
+    // Add an alert about the new danger zone
+    data.alerts.unshift({
+      id: `alert-${Math.floor(Math.random() * 1000)}`,
+      severity: 'critical',
+      title: 'New Danger Zone',
+      message: `New danger zone identified near ${randomCity.name}. Please avoid the area.`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      location: randomCity.name,
+      isNew: true
+    });
+  }
+  
+  // Sometimes remove a danger zone (10% chance, if we have more than 1)
+  if (Math.random() > 0.9 && data.dangerZones.length > 1) {
+    const indexToRemove = Math.floor(Math.random() * data.dangerZones.length);
+    data.dangerZones.splice(indexToRemove, 1);
   }
   
   // Update evacuation routes
@@ -337,6 +394,12 @@ const getUpdatedData = (): MapDataType => {
       location: `${newRoute.startPoint}-${newRoute.endPoint}`,
       isNew: true
     });
+  }
+  
+  // Sometimes remove a route (10% chance, if we have more than 3)
+  if (Math.random() > 0.9 && data.evacuationRoutes.length > 3) {
+    const indexToRemove = Math.floor(Math.random() * data.evacuationRoutes.length);
+    data.evacuationRoutes.splice(indexToRemove, 1);
   }
   
   // Sometimes add a new alert
