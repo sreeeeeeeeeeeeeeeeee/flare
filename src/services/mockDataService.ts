@@ -1,4 +1,4 @@
-import { MapDataType, EvacuationRouteType } from '@/types/emergency';
+import { MapDataType, EvacuationRouteType, DangerZoneType } from '@/types/emergency';
 
 // Sample YouTube video - keeping only one video feed
 const droneVideo = 'https://youtu.be/uRFrHhBKAto';
@@ -25,14 +25,142 @@ const ontarioCities = [
   { name: 'Vaughan', lat: 43.8361, lng: -79.5001 }
 ];
 
-// Function to generate a random route between two cities
-const generateRoute = (startCityIndex: number, endCityIndex: number, id: string): EvacuationRouteType => {
-  const startCity = ontarioCities[startCityIndex];
-  const endCity = ontarioCities[endCityIndex];
+// Generate a realistic danger zone around a city
+const generateDangerZone = (nearCity: number, id: string): DangerZoneType => {
+  const city = ontarioCities[nearCity];
+  const zoneTypes: Array<'wildfire' | 'flood' | 'chemical' | 'other'> = ['wildfire', 'flood', 'chemical', 'other'];
+  const riskLevels: Array<'high' | 'medium' | 'low'> = ['high', 'medium', 'low'];
   
-  // Generate a route with a midpoint to make it look more realistic
-  const midpointLat = (startCity.lat + endCity.lat) / 2 + (Math.random() - 0.5) * 0.5;
-  const midpointLng = (startCity.lng + endCity.lng) / 2 + (Math.random() - 0.5) * 0.5;
+  // Create an irregular polygon around the city
+  const radius = 0.05 + Math.random() * 0.1; // Random radius between 0.05 and 0.15 degrees
+  const sides = 5 + Math.floor(Math.random() * 3); // 5-7 sides for the polygon
+  const coordinates = [];
+  
+  for (let i = 0; i < sides; i++) {
+    const angle = (i / sides) * Math.PI * 2;
+    const lng = city.lng + Math.cos(angle) * radius * (0.8 + Math.random() * 0.4); // Add irregularity
+    const lat = city.lat + Math.sin(angle) * radius * (0.8 + Math.random() * 0.4);
+    coordinates.push([lng, lat]);
+  }
+  
+  // Close the polygon
+  coordinates.push([...coordinates[0]]);
+  
+  return {
+    id,
+    type: zoneTypes[Math.floor(Math.random() * zoneTypes.length)],
+    riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
+    geometry: {
+      type: 'Polygon',
+      coordinates: [coordinates]
+    }
+  };
+};
+
+// Function to generate initial danger zones
+const generateInitialDangerZones = (count: number = 5): DangerZoneType[] => {
+  const zones: DangerZoneType[] = [];
+  const usedCities = new Set<number>();
+  
+  while (zones.length < count) {
+    const cityIndex = Math.floor(Math.random() * ontarioCities.length);
+    if (!usedCities.has(cityIndex)) {
+      zones.push(generateDangerZone(cityIndex, `zone-${zones.length + 1}`));
+      usedCities.add(cityIndex);
+    }
+  }
+  
+  return zones;
+};
+
+// Function to find the nearest city to a given danger zone
+const findNearestCityToDangerZone = (zone: DangerZoneType): number => {
+  // Use the first coordinate of the polygon as a reference point
+  const zoneLng = zone.geometry.coordinates[0][0][0];
+  const zoneLat = zone.geometry.coordinates[0][0][1];
+  
+  let minDistance = Number.MAX_VALUE;
+  let closestCityIndex = 0;
+  
+  ontarioCities.forEach((city, index) => {
+    const distance = Math.sqrt(
+      Math.pow(city.lat - zoneLat, 2) + 
+      Math.pow(city.lng - zoneLng, 2)
+    );
+    
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestCityIndex = index;
+    }
+  });
+  
+  return closestCityIndex;
+};
+
+// Function to find a city near a danger zone
+const findCityNearDangerZone = (zone: DangerZoneType, excludeCity: number): number => {
+  // Use the first coordinate of the polygon as a reference point
+  const zoneLng = zone.geometry.coordinates[0][0][0];
+  const zoneLat = zone.geometry.coordinates[0][0][1];
+  
+  // Calculate distances to all cities
+  const cityDistances = ontarioCities.map((city, index) => ({
+    index,
+    distance: Math.sqrt(Math.pow(city.lat - zoneLat, 2) + Math.pow(city.lng - zoneLng, 2))
+  }));
+  
+  // Sort by distance
+  cityDistances.sort((a, b) => a.distance - b.distance);
+  
+  // Find the nearest city that isn't excluded
+  for (const cityDist of cityDistances) {
+    if (cityDist.index !== excludeCity) {
+      return cityDist.index;
+    }
+  }
+  
+  // Fallback to a random city
+  let randomCity = Math.floor(Math.random() * ontarioCities.length);
+  while (randomCity === excludeCity) {
+    randomCity = Math.floor(Math.random() * ontarioCities.length);
+  }
+  return randomCity;
+};
+
+// Function to generate a realistic evacuation route from a danger zone to a safe city
+const generateEvacuationRouteFromDangerZone = (zone: DangerZoneType, id: string): EvacuationRouteType => {
+  // Find the nearest city to the danger zone
+  const nearestCityIndex = findNearestCityToDangerZone(zone);
+  
+  // Find another city as destination (preferably further from the danger zone)
+  const destinationCityIndex = findCityNearDangerZone(zone, nearestCityIndex);
+  
+  const startCity = ontarioCities[nearestCityIndex];
+  const endCity = ontarioCities[destinationCityIndex];
+  
+  // Generate a route with multiple points to make it look more realistic
+  const numPoints = 2 + Math.floor(Math.random() * 3); // 2-4 intermediate points
+  const points = [];
+  
+  // Start with the city near the danger zone
+  points.push([startCity.lng, startCity.lat]);
+  
+  // Add intermediate points with some randomness, but generally moving toward the destination
+  for (let i = 1; i <= numPoints; i++) {
+    const progress = i / (numPoints + 1);
+    const baseLng = startCity.lng + (endCity.lng - startCity.lng) * progress;
+    const baseLat = startCity.lat + (endCity.lat - startCity.lat) * progress;
+    
+    // Add some deviation to make the route look more natural
+    const deviation = 0.05 - (progress * 0.02); // Less deviation as we get closer to destination
+    points.push([
+      baseLng + (Math.random() - 0.5) * deviation,
+      baseLat + (Math.random() - 0.5) * deviation
+    ]);
+  }
+  
+  // End with the destination city
+  points.push([endCity.lng, endCity.lat]);
   
   // Calculate a rough distance-based estimated time (in minutes)
   const distance = Math.sqrt(
@@ -77,43 +205,30 @@ const generateRoute = (startCityIndex: number, endCityIndex: number, id: string)
     transportMethods,
     geometry: {
       type: 'LineString',
-      coordinates: [
-        [startCity.lng, startCity.lat],
-        [midpointLng, midpointLat],
-        [endCity.lng, endCity.lat]
-      ]
+      coordinates: points
     }
   };
 };
 
-// Generate initial evacuation routes
-const generateInitialRoutes = (count: number = 5): EvacuationRouteType[] => {
+// Generate evacuation routes from danger zones
+const generateEvacuationRoutesFromDangerZones = (dangerZones: DangerZoneType[]): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
-  const addedPairs = new Set<string>(); // Track city pairs to avoid duplicates
   
-  while (routes.length < count) {
-    const startIndex = Math.floor(Math.random() * ontarioCities.length);
-    let endIndex = Math.floor(Math.random() * ontarioCities.length);
+  // Create at least one route per danger zone
+  dangerZones.forEach((zone, index) => {
+    routes.push(generateEvacuationRouteFromDangerZone(zone, `route-${index + 1}`));
     
-    // Make sure start and end cities are different
-    while (endIndex === startIndex) {
-      endIndex = Math.floor(Math.random() * ontarioCities.length);
+    // 50% chance to add a second route for this danger zone
+    if (Math.random() > 0.5) {
+      routes.push(generateEvacuationRouteFromDangerZone(zone, `route-${index + 1}-alt`));
     }
-    
-    // Check if this pair already exists (in either direction)
-    const pairKey = `${startIndex}-${endIndex}`;
-    const reversePairKey = `${endIndex}-${startIndex}`;
-    
-    if (!addedPairs.has(pairKey) && !addedPairs.has(reversePairKey)) {
-      routes.push(generateRoute(startIndex, endIndex, `route-${routes.length + 1}`));
-      addedPairs.add(pairKey);
-    }
-  }
+  });
   
   return routes;
 };
 
-// Initial data state - updated for Ontario, Canada
+// Initial data state - updated with more danger zones and realistic evacuation routes
+const initialDangerZones = generateInitialDangerZones(5); // 5 initial danger zones
 const initialData: MapDataType = {
   responders: [
     {
@@ -150,39 +265,8 @@ const initialData: MapDataType = {
       }
     },
   ],
-  dangerZones: [
-    {
-      id: 'zone-1',
-      type: 'wildfire',
-      riskLevel: 'high',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [[
-          [-80.2, 45.5],
-          [-80.3, 45.5],
-          [-80.3, 45.6],
-          [-80.2, 45.6],
-          [-80.2, 45.5],
-        ]]
-      }
-    },
-    {
-      id: 'zone-2',
-      type: 'wildfire',
-      riskLevel: 'high',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [[
-          [-79.58, 43.83],
-          [-79.59, 43.83],
-          [-79.59, 43.84],
-          [-79.58, 43.84],
-          [-79.58, 43.83],
-        ]]
-      }
-    }
-  ],
-  evacuationRoutes: generateInitialRoutes(5),
+  dangerZones: initialDangerZones,
+  evacuationRoutes: generateEvacuationRoutesFromDangerZones(initialDangerZones),
   alerts: [
     {
       id: 'alert-1',
@@ -233,18 +317,29 @@ const initialData: MapDataType = {
   ]
 };
 
-// Function to update existing route or generate a new one
-const updateEvacuationRoute = (routes: EvacuationRouteType[], index: number): EvacuationRouteType => {
-  // 20% chance to generate a completely new route
-  if (Math.random() < 0.2) {
-    const startIndex = Math.floor(Math.random() * ontarioCities.length);
-    let endIndex = Math.floor(Math.random() * ontarioCities.length);
+// Function to update existing route or generate a new one related to a danger zone
+const updateEvacuationRoute = (routes: EvacuationRouteType[], index: number, dangerZones: DangerZoneType[]): EvacuationRouteType => {
+  // If there are no danger zones, use the old method
+  if (dangerZones.length === 0) {
+    // Just update the status
+    const updatedRoute = { ...routes[index] };
+    const statusOptions: Array<'open' | 'congested' | 'closed'> = ['open', 'congested', 'closed'];
+    updatedRoute.status = statusOptions[Math.floor(Math.random() * statusOptions.length)];
     
-    while (endIndex === startIndex) {
-      endIndex = Math.floor(Math.random() * ontarioCities.length);
+    // Sometimes update the estimated time as well
+    if (Math.random() > 0.7) {
+      const currentTime = updatedRoute.estimatedTime;
+      const adjustment = Math.round((Math.random() - 0.5) * 20); // +/- 20 minutes max
+      updatedRoute.estimatedTime = Math.max(5, currentTime + adjustment); // Ensure at least 5 minutes
     }
     
-    return generateRoute(startIndex, endIndex, routes[index].id);
+    return updatedRoute;
+  }
+  
+  // 20% chance to generate a completely new route from a random danger zone
+  if (Math.random() < 0.2) {
+    const randomZoneIndex = Math.floor(Math.random() * dangerZones.length);
+    return generateEvacuationRouteFromDangerZone(dangerZones[randomZoneIndex], routes[index].id);
   }
   
   // Otherwise just update the status
@@ -311,74 +406,67 @@ const getUpdatedData = (): MapDataType => {
     });
   }
   
-  // Sometimes add a new danger zone (15% chance, max 5 zones)
-  if (Math.random() > 0.85 && data.dangerZones.length < 5) {
-    const randomCity = ontarioCities[Math.floor(Math.random() * ontarioCities.length)];
-    const zoneTypes: Array<'wildfire' | 'flood' | 'chemical' | 'other'> = ['wildfire', 'flood', 'chemical', 'other'];
-    const riskLevels: Array<'high' | 'medium' | 'low'> = ['high', 'medium', 'low'];
+  // Sometimes add a new danger zone (15% chance, max 8 zones)
+  if (Math.random() > 0.85 && data.dangerZones.length < 8) {
+    const randomCityIndex = Math.floor(Math.random() * ontarioCities.length);
+    const newZone = generateDangerZone(randomCityIndex, `zone-${Math.floor(Math.random() * 1000)}`);
+    data.dangerZones.push(newZone);
     
-    // Create a polygon around the city
-    const radius = 0.05 + Math.random() * 0.1; // Random radius between 0.05 and 0.15 degrees
-    const sides = 5 + Math.floor(Math.random() * 3); // 5-7 sides for the polygon
-    const coordinates = [];
-    
-    for (let i = 0; i < sides; i++) {
-      const angle = (i / sides) * Math.PI * 2;
-      const lng = randomCity.lng + Math.cos(angle) * radius * (0.8 + Math.random() * 0.4); // Add some irregularity
-      const lat = randomCity.lat + Math.sin(angle) * radius * (0.8 + Math.random() * 0.4);
-      coordinates.push([lng, lat]);
-    }
-    
-    // Close the polygon
-    coordinates.push([...coordinates[0]]);
-    
-    data.dangerZones.push({
-      id: `zone-${Math.floor(Math.random() * 1000)}`,
-      type: zoneTypes[Math.floor(Math.random() * zoneTypes.length)],
-      riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
-      geometry: {
-        type: 'Polygon',
-        coordinates: [coordinates]
-      }
-    });
+    // Add an evacuation route for this new danger zone
+    data.evacuationRoutes.push(generateEvacuationRouteFromDangerZone(newZone, `route-${Math.floor(Math.random() * 1000)}`));
     
     // Add an alert about the new danger zone
     data.alerts.unshift({
       id: `alert-${Math.floor(Math.random() * 1000)}`,
       severity: 'critical',
       title: 'New Danger Zone',
-      message: `New danger zone identified near ${randomCity.name}. Please avoid the area.`,
+      message: `New danger zone identified near ${ontarioCities[randomCityIndex].name}. Please avoid the area.`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      location: randomCity.name,
+      location: ontarioCities[randomCityIndex].name,
       isNew: true
     });
   }
   
-  // Sometimes remove a danger zone (10% chance, if we have more than 1)
-  if (Math.random() > 0.9 && data.dangerZones.length > 1) {
+  // Sometimes remove a danger zone (10% chance, if we have more than 4)
+  if (Math.random() > 0.9 && data.dangerZones.length > 4) {
     const indexToRemove = Math.floor(Math.random() * data.dangerZones.length);
+    const removedZone = data.dangerZones[indexToRemove];
     data.dangerZones.splice(indexToRemove, 1);
+    
+    // Also remove routes associated with this zone
+    // In real life, we would have a direct relationship between routes and zones
+    // But here we'll use a heuristic - remove routes that start near the removed zone
+    const routesToKeep = data.evacuationRoutes.filter(route => {
+      const startPointCity = ontarioCities.find(city => city.name === route.startPoint);
+      if (!startPointCity) return true; // Keep if we can't find the city
+      
+      // Calculate distance from route start to danger zone
+      const zoneCoord = removedZone.geometry.coordinates[0][0];
+      const distance = Math.sqrt(
+        Math.pow(startPointCity.lat - zoneCoord[1], 2) + 
+        Math.pow(startPointCity.lng - zoneCoord[0], 2)
+      );
+      
+      // If the route starts far from the removed zone, keep it
+      return distance > 0.2; // 0.2 degrees is roughly 22km
+    });
+    
+    // Replace routes with the filtered list
+    data.evacuationRoutes = routesToKeep;
   }
   
   // Update evacuation routes
   // 30% chance to update a random route
   if (Math.random() < 0.3 && data.evacuationRoutes.length > 0) {
     const routeIndex = Math.floor(Math.random() * data.evacuationRoutes.length);
-    data.evacuationRoutes[routeIndex] = updateEvacuationRoute(data.evacuationRoutes, routeIndex);
+    data.evacuationRoutes[routeIndex] = updateEvacuationRoute(data.evacuationRoutes, routeIndex, data.dangerZones);
   }
   
-  // 10% chance to add a completely new route (if we have less than 8 routes)
-  if (Math.random() < 0.1 && data.evacuationRoutes.length < 8) {
-    const startIndex = Math.floor(Math.random() * ontarioCities.length);
-    let endIndex = Math.floor(Math.random() * ontarioCities.length);
-    
-    while (endIndex === startIndex) {
-      endIndex = Math.floor(Math.random() * ontarioCities.length);
-    }
-    
-    const newRoute = generateRoute(
-      startIndex,
-      endIndex,
+  // 10% chance to add a completely new route from a danger zone (if we have less than 12 routes)
+  if (Math.random() < 0.1 && data.evacuationRoutes.length < 12 && data.dangerZones.length > 0) {
+    const randomZoneIndex = Math.floor(Math.random() * data.dangerZones.length);
+    const newRoute = generateEvacuationRouteFromDangerZone(
+      data.dangerZones[randomZoneIndex],
       `route-${Math.floor(Math.random() * 1000)}`
     );
     
@@ -396,8 +484,8 @@ const getUpdatedData = (): MapDataType => {
     });
   }
   
-  // Sometimes remove a route (10% chance, if we have more than 3)
-  if (Math.random() > 0.9 && data.evacuationRoutes.length > 3) {
+  // Sometimes remove a route (10% chance, if we have more than 4)
+  if (Math.random() > 0.9 && data.evacuationRoutes.length > 4) {
     const indexToRemove = Math.floor(Math.random() * data.evacuationRoutes.length);
     data.evacuationRoutes.splice(indexToRemove, 1);
   }
