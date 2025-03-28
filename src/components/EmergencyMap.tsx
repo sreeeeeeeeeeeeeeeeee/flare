@@ -5,6 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapDataType } from '@/types/emergency';
+import { Flame, TreePine } from 'lucide-react';
 
 // Fix Leaflet marker icon issue
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -101,7 +102,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       
-      {/* Danger zones */}
+      {/* Danger zones - Forest Fires */}
       {data.dangerZones.map((zone) => (
         <Polygon
           key={zone.id}
@@ -116,8 +117,16 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
           }}
         >
           <Popup>
-            <div className="text-sm font-medium">{zone.type.toUpperCase()} Zone</div>
+            <div className="flex items-center gap-2 text-sm font-medium mb-1">
+              <Flame className="h-4 w-4 text-danger" />
+              {zone.type === 'wildfire' ? 'Forest Fire' : 'WILDFIRE'}
+            </div>
             <div className="text-xs">Risk Level: {zone.riskLevel}</div>
+            <div className="text-xs">Forest Region: {zone.forestRegion || 'Ontario'}</div>
+            <div className="text-xs flex items-center gap-1 mt-1">
+              <TreePine className="h-3 w-3 text-emerald-600" />
+              <span>Affected Forest Area</span>
+            </div>
           </Popup>
         </Polygon>
       ))}

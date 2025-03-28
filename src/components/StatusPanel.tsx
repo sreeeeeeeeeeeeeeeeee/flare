@@ -1,5 +1,5 @@
 
-import { AlertTriangle, UserRound, Route } from 'lucide-react';
+import { Flame, UserRound, Route } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type StatusPanelProps = {
@@ -27,9 +27,9 @@ const StatusPanel = ({ dangerZones, responders, safeRoutes }: StatusPanelProps) 
   return (
     <div className="grid grid-cols-3 gap-2">
       <div className="border border-border rounded-lg bg-card p-3 flex flex-col items-center justify-center">
-        <AlertTriangle className="h-5 w-5 text-danger mb-2" />
+        <Flame className="h-5 w-5 text-danger mb-2" />
         <div className="text-xl font-bold">{counts.dangerZones}</div>
-        <div className="text-xs text-muted-foreground">Danger Zones</div>
+        <div className="text-xs text-muted-foreground">Forest Fire Zones</div>
       </div>
       
       <div className="border border-border rounded-lg bg-card p-3 flex flex-col items-center justify-center">

@@ -1,3 +1,4 @@
+
 import { MapDataType, EvacuationRouteType, DangerZoneType } from '@/types/emergency';
 
 // Sample YouTube video - keeping only one video feed
@@ -25,10 +26,22 @@ const ontarioCities = [
   { name: 'Vaughan', lat: 43.8361, lng: -79.5001 }
 ];
 
-// Generate a realistic danger zone around a city
-const generateDangerZone = (nearCity: number, id: string): DangerZoneType => {
+// Ontario forest regions
+const ontarioForestRegions = [
+  'Algonquin Provincial Park',
+  'Temagami Forest',
+  'Boreal Forest',
+  'Great Lakes-St. Lawrence Forest',
+  'Georgian Bay Forest',
+  'Quetico Provincial Park',
+  'Wabakimi Provincial Park',
+  'Lake Superior Provincial Park',
+  'Killarney Provincial Park'
+];
+
+// Generate a realistic forest fire zone 
+const generateForestFireZone = (nearCity: number, id: string): DangerZoneType => {
   const city = ontarioCities[nearCity];
-  const zoneTypes: Array<'wildfire' | 'flood' | 'chemical' | 'other'> = ['wildfire', 'flood', 'chemical', 'other'];
   const riskLevels: Array<'high' | 'medium' | 'low'> = ['high', 'medium', 'low'];
   
   // Create an irregular polygon around the city
@@ -48,8 +61,9 @@ const generateDangerZone = (nearCity: number, id: string): DangerZoneType => {
   
   return {
     id,
-    type: zoneTypes[Math.floor(Math.random() * zoneTypes.length)],
+    type: 'wildfire', // Always wildfire for forest fires
     riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
+    forestRegion: ontarioForestRegions[Math.floor(Math.random() * ontarioForestRegions.length)],
     geometry: {
       type: 'Polygon',
       coordinates: [coordinates]
@@ -57,15 +71,27 @@ const generateDangerZone = (nearCity: number, id: string): DangerZoneType => {
   };
 };
 
-// Function to generate initial danger zones
-const generateInitialDangerZones = (count: number = 5): DangerZoneType[] => {
+// Function to generate initial forest fire zones
+const generateInitialForestFireZones = (count: number = 8): DangerZoneType[] => {
   const zones: DangerZoneType[] = [];
   const usedCities = new Set<number>();
   
+  // Prefer northern cities for forest fires (more forested areas)
+  const northernCities = [6, 7, 9, 10, 12, 15, 16]; // Indices of more northern cities
+  
+  // Add some northern forest fires first
+  for (const cityIndex of northernCities) {
+    if (zones.length < count * 0.7) { // 70% of fires in northern areas
+      zones.push(generateForestFireZone(cityIndex, `zone-${zones.length + 1}`));
+      usedCities.add(cityIndex);
+    }
+  }
+  
+  // Fill the rest with random locations
   while (zones.length < count) {
     const cityIndex = Math.floor(Math.random() * ontarioCities.length);
     if (!usedCities.has(cityIndex)) {
-      zones.push(generateDangerZone(cityIndex, `zone-${zones.length + 1}`));
+      zones.push(generateForestFireZone(cityIndex, `zone-${zones.length + 1}`));
       usedCities.add(cityIndex);
     }
   }
@@ -127,7 +153,7 @@ const findCityNearDangerZone = (zone: DangerZoneType, excludeCity: number): numb
   return randomCity;
 };
 
-// Function to generate a realistic evacuation route from a danger zone to a safe city
+// Function to generate a realistic evacuation route from a forest fire zone to a safe city
 const generateEvacuationRouteFromDangerZone = (zone: DangerZoneType, id: string): EvacuationRouteType => {
   // Find the nearest city to the danger zone
   const nearestCityIndex = findNearestCityToDangerZone(zone);
@@ -227,41 +253,63 @@ const generateEvacuationRoutesFromDangerZones = (dangerZones: DangerZoneType[]):
   return routes;
 };
 
-// Initial data state - updated with more danger zones and realistic evacuation routes
-const initialDangerZones = generateInitialDangerZones(5); // 5 initial danger zones
+// Initial data state - updated with more forest fire zones and realistic evacuation routes
+const initialDangerZones = generateInitialForestFireZones(8); // 8 initial forest fire zones
 const initialData: MapDataType = {
   responders: [
     {
       id: 'resp-1',
-      name: 'Drone 1',
-      type: 'drone',
+      name: 'Fire Squad A',
+      type: 'fire',
       status: 'active',
       position: {
-        latitude: 43.6532,
-        longitude: -79.3832,
-        locationName: 'Toronto'
+        latitude: 46.4917,
+        longitude: -80.9930,
+        locationName: 'Sudbury'
       }
     },
     {
       id: 'resp-2',
-      name: 'Fire Squad A',
-      type: 'fire',
-      status: 'en-route',
+      name: 'Drone 1',
+      type: 'drone',
+      status: 'active',
       position: {
-        latitude: 43.8561,
-        longitude: -79.5370,
-        locationName: 'Vaughan'
+        latitude: 48.3809,
+        longitude: -89.2477,
+        locationName: 'Thunder Bay'
       }
     },
     {
       id: 'resp-3',
-      name: 'Ambulance 35',
+      name: 'Medical Team B',
       type: 'medical',
+      status: 'en-route',
+      position: {
+        latitude: 49.7797, 
+        longitude: -92.8370,
+        locationName: 'Dryden'
+      }
+    },
+    {
+      id: 'resp-4',
+      name: 'Fire Squad C',
+      type: 'fire',
       status: 'active',
       position: {
-        latitude: 43.7315,
-        longitude: -79.7624,
-        locationName: 'Brampton'
+        latitude: 48.4758,
+        longitude: -81.3305,
+        locationName: 'Timmins'
+      }
+    },
+    {
+      id: 'resp-5',
+      name: 'Police Unit 7',
+      type: 'police',
+      status: 'en-route',
+      position: {
+        latitude: 46.3091,
+        longitude: -79.4608,
+        locationName: 'North Bay'
       }
     },
   ],
@@ -271,10 +319,10 @@ const initialData: MapDataType = {
     {
       id: 'alert-1',
       severity: 'critical',
-      title: 'Wildfire Alert',
-      message: 'Active wildfire detected in Northern Ontario. Immediate evacuation required.',
+      title: 'Forest Fire Alert',
+      message: 'Active forest fire detected in Algonquin Provincial Park. Immediate evacuation required.',
       time: '13:45',
-      location: 'Northern Ontario',
+      location: 'Algonquin Provincial Park',
       isNew: false
     },
     {
@@ -289,19 +337,19 @@ const initialData: MapDataType = {
     {
       id: 'alert-3',
       severity: 'critical',
-      title: 'Hazardous Area',
-      message: 'New danger zone identified in Vaughan. Please avoid the area.',
+      title: 'New Forest Fire',
+      message: 'New forest fire identified in Temagami Forest. Please avoid the area.',
       time: '14:05',
-      location: 'Vaughan',
+      location: 'Temagami',
       isNew: true
     },
     {
-    id: 'alert-4', 
-    severity: 'warning',
-    title: 'Traffic Congestion',
-    message: 'Heavy traffic on Highway 141 due to evacuation. Seek an alternative route.',
-    time: '18:30',
-    location: 'Highway 141',
+      id: 'alert-4', 
+      severity: 'warning',
+      title: 'Smoke Conditions',
+      message: 'Poor visibility due to smoke from forest fires. Use caution when driving in Northern Ontario.',
+      time: '18:30',
+      location: 'Northern Ontario',
       isNew: false
     }
   ],
@@ -310,7 +358,7 @@ const initialData: MapDataType = {
       id: 'video-1',
       type: 'drone',
       source: droneVideo,
-      location: 'Northern Ontario Wildfire Zone',
+      location: 'Northern Ontario Forest Fire Zone',
       hasAlert: true,
       relatedFeeds: [] // Empty related feeds
     }
@@ -352,7 +400,7 @@ const updateEvacuationRoute = (routes: EvacuationRouteType[], index: number, dan
     const currentTime = updatedRoute.estimatedTime;
     const adjustment = Math.round((Math.random() - 0.5) * 20); // +/- 20 minutes max
     updatedRoute.estimatedTime = Math.max(5, currentTime + adjustment); // Ensure at least 5 minutes
-  }
+    }
   
   return updatedRoute;
 };
@@ -373,7 +421,9 @@ const getUpdatedData = (): MapDataType => {
     const newResponderTypes: Array<'drone' | 'police' | 'fire' | 'medical'> = ['drone', 'police', 'fire', 'medical'];
     const newResponderType = newResponderTypes[Math.floor(Math.random() * newResponderTypes.length)];
     
-    const location = ontarioCities[Math.floor(Math.random() * ontarioCities.length)];
+    // For forest fires, prioritize northern regions for new responders
+    const northernCities = [6, 7, 9, 10, 12, 15, 16]; // Indices of more northern cities
+    const location = ontarioCities[northernCities[Math.floor(Math.random() * northernCities.length)]];
     
     data.responders.push({
       id: `resp-${Math.floor(Math.random() * 1000)}`,
@@ -406,23 +456,28 @@ const getUpdatedData = (): MapDataType => {
     });
   }
   
-  // Sometimes add a new danger zone (15% chance, max 8 zones)
+  // Sometimes add a new forest fire zone (15% chance, max 8 zones)
   if (Math.random() > 0.85 && data.dangerZones.length < 8) {
-    const randomCityIndex = Math.floor(Math.random() * ontarioCities.length);
-    const newZone = generateDangerZone(randomCityIndex, `zone-${Math.floor(Math.random() * 1000)}`);
+    // Prefer northern cities for forest fires (more forested areas)
+    const northernCities = [6, 7, 9, 10, 12, 15, 16]; // Indices of more northern cities
+    const randomCityIndex = northernCities[Math.floor(Math.random() * northernCities.length)];
+    
+    const newZone = generateForestFireZone(randomCityIndex, `zone-${Math.floor(Math.random() * 1000)}`);
     data.dangerZones.push(newZone);
     
     // Add an evacuation route for this new danger zone
     data.evacuationRoutes.push(generateEvacuationRouteFromDangerZone(newZone, `route-${Math.floor(Math.random() * 1000)}`));
     
-    // Add an alert about the new danger zone
+    // Add an alert about the new forest fire
+    const forestRegion = newZone.forestRegion || 'Ontario Forest';
+    
     data.alerts.unshift({
       id: `alert-${Math.floor(Math.random() * 1000)}`,
       severity: 'critical',
-      title: 'New Danger Zone',
-      message: `New danger zone identified near ${ontarioCities[randomCityIndex].name}. Please avoid the area.`,
+      title: 'New Forest Fire',
+      message: `New forest fire detected in ${forestRegion} near ${ontarioCities[randomCityIndex].name}. Please avoid the area.`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      location: ontarioCities[randomCityIndex].name,
+      location: forestRegion,
       isNew: true
     });
   }
@@ -477,7 +532,7 @@ const getUpdatedData = (): MapDataType => {
       id: `alert-${Math.floor(Math.random() * 1000)}`,
       severity: 'info',
       title: 'New Evacuation Route',
-      message: `New evacuation route established from ${newRoute.startPoint} to ${newRoute.endPoint}.`,
+      message: `New evacuation route established from ${newRoute.startPoint} to ${newRoute.endPoint} due to forest fire threat.`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       location: `${newRoute.startPoint}-${newRoute.endPoint}`,
       isNew: true
@@ -490,40 +545,41 @@ const getUpdatedData = (): MapDataType => {
     data.evacuationRoutes.splice(indexToRemove, 1);
   }
   
-  // Sometimes add a new alert
+  // Sometimes add a new forest fire related alert
   if (Math.random() > 0.7) {
     const alertSeverities: Array<'critical' | 'warning' | 'info'> = ['critical', 'warning', 'info'];
     const newSeverity = alertSeverities[Math.floor(Math.random() * alertSeverities.length)];
     
-    // Ontario-specific alert templates
+    // Forest fire specific alert templates
     const alertTemplates = {
       critical: {
-        title: 'Critical Alert',
+        title: 'Critical Fire Alert',
         messages: [
-          'New fire spot detected in Northern Ontario. Immediate evacuation required.',
-          'Highway 401 section closed due to incident. Seek alternate routes.',
-          'Flash flood warning issued for Eastern Ontario. Move to higher ground.'
+          'New forest fire spot detected in Northern Ontario. Immediate evacuation required.',
+          'Fire spread accelerating due to changing wind patterns. Additional evacuations ordered.',
+          'Fire has jumped containment lines in Algonquin Park. Evacuation zone expanded.'
         ]
       },
       warning: {
-        title: 'Warning Alert',
+        title: 'Fire Warning',
         messages: [
-          'Wind direction changing in Muskoka region. Fire spread possible.',
-          'Traffic congestion intensifying on Highway 400.',
-          'Medical resources limited in Northwestern Ontario.'
+          'Wind direction changing in Boreal Forest region. Fire spread anticipated.',
+          'Smoke conditions worsening near Thunder Bay. Air quality alert issued.',
+          'Low visibility on Highway 11 due to forest fire smoke.'
         ]
       },
       info: {
-        title: 'Information Update',
+        title: 'Fire Update',
         messages: [
-          'New evacuation center opened at Toronto Convention Centre.',
-          'Drone surveillance expanded to Ottawa Valley region.',
-          'Weather forecast predicts rain in Northern Ontario in 6 hours.'
+          'New fire suppression team deployed to Temagami Forest region.',
+          'Water bomber aircraft now operating in Georgian Bay Forest area.',
+          'Weather forecast predicts rain in Northern Ontario, possibly aiding firefighting efforts.'
         ]
       }
     };
     
-    const location = ontarioCities[Math.floor(Math.random() * ontarioCities.length)].name;
+    // Select a random forest region
+    const forestRegion = ontarioForestRegions[Math.floor(Math.random() * ontarioForestRegions.length)];
     
     data.alerts.unshift({
       id: `alert-${Math.floor(Math.random() * 1000)}`,
@@ -531,7 +587,7 @@ const getUpdatedData = (): MapDataType => {
       title: alertTemplates[newSeverity].title,
       message: alertTemplates[newSeverity].messages[Math.floor(Math.random() * alertTemplates[newSeverity].messages.length)],
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      location: location,
+      location: forestRegion,
       isNew: true
     });
   }

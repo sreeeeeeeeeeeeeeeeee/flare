@@ -17,6 +17,7 @@ export type DangerZoneType = {
   id: string;
   type: 'wildfire' | 'flood' | 'chemical' | 'other';
   riskLevel: 'high' | 'medium' | 'low';
+  forestRegion?: string;
   geometry: {
     type: 'Polygon';
     coordinates: number[][][];
