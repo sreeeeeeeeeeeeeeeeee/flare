@@ -6,7 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapDataType } from '@/types/emergency';
 import { Flame, TreePine, MapPin, Navigation } from 'lucide-react';
-import { mistissiniLocation } from '@/services/mistissiniData';
+import { mistissiniLocation, mistissiniStreets } from '@/services/mistissiniData';
 
 // Fix Leaflet marker icon issue
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -98,6 +98,11 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
     iconAnchor: [20, 40]
   });
 
+  // Display all streets as reference
+  const nonEvacuationStreets = mistissiniStreets.filter(
+    street => !data.evacuationRoutes.some(route => route.routeName === street.name)
+  );
+
   return (
     <MapContainer 
       center={[mistissiniLocation.center.lat, mistissiniLocation.center.lng]} 
@@ -125,6 +130,25 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
         </Popup>
       </Marker>
       
+      {/* Show all streets as reference (thin gray lines) */}
+      {nonEvacuationStreets.map((street) => (
+        <Polyline
+          key={`street-${street.name}`}
+          positions={street.path}
+          pathOptions={{
+            color: '#94a3b8',
+            weight: 2,
+            opacity: 0.5,
+            dashArray: '4, 4'
+          }}
+        >
+          <Popup>
+            <div className="text-sm font-medium">{street.name}</div>
+            <div className="text-xs">{street.description}</div>
+          </Popup>
+        </Polyline>
+      ))}
+      
       {/* Evacuation routes */}
       {data.evacuationRoutes.map((route) => (
         <Polyline
@@ -132,7 +156,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
           positions={route.geometry.coordinates.map(coord => [coord[1], coord[0]])}
           pathOptions={{
             color: route.status === 'open' ? '#22c55e' : route.status === 'congested' ? '#f59e0b' : '#ef4444',
-            weight: route.routeName?.includes("Route") || route.routeName?.includes("Road to") ? 5 : 3,
+            weight: route.routeName?.includes("Route") || route.routeName?.includes("Road to") ? 5 : 4,
             opacity: 0.9
           }}
         >

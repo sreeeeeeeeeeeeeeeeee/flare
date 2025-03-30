@@ -1,3 +1,4 @@
+
 import { MapDataType, EvacuationRouteType, DangerZoneType } from '@/types/emergency';
 import { mistissiniLocation, mistissiniRegions, mistissiniForestRegions, evacuationDestinations, mistissiniHighways, mistissiniStreets } from './mistissiniData';
 
@@ -11,7 +12,7 @@ const generateForestFireZone = (nearRegion: number, id: string): DangerZoneType 
   
   // Create a smaller irregular polygon around the region
   // Further reduced radius to make the danger zones highly focused
-  const radius = 0.003 + Math.random() * 0.008; // Much smaller radius between 0.003 and 0.011 degrees
+  const radius = 0.002 + Math.random() * 0.004; // Even smaller radius between 0.002 and 0.006 degrees
   const sides = 5 + Math.floor(Math.random() * 3); // 5-7 sides for the polygon
   const coordinates = [];
   
@@ -37,7 +38,7 @@ const generateForestFireZone = (nearRegion: number, id: string): DangerZoneType 
   };
 };
 
-// Function to generate initial forest fire zones around Mistissini - now with smaller zones
+// Function to generate initial forest fire zones around Mistissini - now with even smaller zones
 const generateInitialForestFireZones = (count: number = 3): DangerZoneType[] => {
   const zones: DangerZoneType[] = [];
   const usedRegions = new Set<number>();
@@ -54,46 +55,53 @@ const generateInitialForestFireZones = (count: number = 3): DangerZoneType[] => 
   return zones;
 };
 
-// Generate evacuation routes that follow actual Mistissini streets
+// Generate evacuation routes that follow actual Mistissini streets exactly
 const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
   
-  // Create evacuation routes that follow street paths exactly
+  // Streets to use as evacuation routes
   const streetsToUse = [
     {
-      street: mistissiniStreets.find(s => s.name === "Amisk Street") || mistissiniStreets[0],
-      id: "route-amisk",
-      startPoint: "Amisk Street East",
-      endPoint: "Amisk Street West",
+      street: mistissiniStreets.find(s => s.name === "Main Street") || mistissiniStreets[0],
+      id: "route-main-street",
+      startPoint: "Main Street East",
+      endPoint: "Main Street West",
       status: "open" as const
     },
     {
-      street: mistissiniStreets.find(s => s.name === "Wabushush Street") || mistissiniStreets[1],
-      id: "route-wabushush",
-      startPoint: "Wabushush Street North",
-      endPoint: "Wabushush Street South",
+      street: mistissiniStreets.find(s => s.name === "Saint John Street") || mistissiniStreets[1],
+      id: "route-saint-john",
+      startPoint: "Saint John Street North",
+      endPoint: "Saint John Street South",
       status: "open" as const
     },
     {
-      street: mistissiniStreets.find(s => s.name === "Etudeh Street") || mistissiniStreets[2],
-      id: "route-etudeh",
-      startPoint: "Etudeh Street West",
-      endPoint: "Etudeh Street East",
+      street: mistissiniStreets.find(s => s.name === "Lakeshore Drive") || mistissiniStreets[2],
+      id: "route-lakeshore",
+      startPoint: "Eastern Shore",
+      endPoint: "Southern Shore",
       status: "congested" as const
     },
     {
-      street: mistissiniStreets.find(s => s.name === "Queen Street") || mistissiniStreets[3],
-      id: "route-queen",
-      startPoint: "Queen Street West",
-      endPoint: "Queen Street East",
+      street: mistissiniStreets.find(s => s.name === "Northern Boulevard") || mistissiniStreets[3],
+      id: "route-northern",
+      startPoint: "Northern Mistissini",
+      endPoint: "Central Mistissini",
       status: "open" as const
     },
     {
-      street: mistissiniStreets.find(s => s.name === "Chief Isaiah Shecapio Road") || mistissiniStreets[5],
-      id: "route-chief-road",
-      startPoint: "Town Entrance",
-      endPoint: "Mistissini Center",
+      street: mistissiniStreets.find(s => s.name === "Southern Avenue") || mistissiniStreets[6],
+      id: "route-southern",
+      startPoint: "Southern Residential Area",
+      endPoint: "Central Mistissini",
       status: "congested" as const
+    },
+    {
+      street: mistissiniStreets.find(s => s.name === "Western Route") || mistissiniStreets[7],
+      id: "route-western",
+      startPoint: "Western Mistissini",
+      endPoint: "Central Mistissini",
+      status: "open" as const
     }
   ];
   
@@ -103,7 +111,7 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
       startPoint: item.startPoint,
       endPoint: item.endPoint,
       status: item.status,
-      estimatedTime: item.street.path.length * 3, // Estimate travel time based on path length
+      estimatedTime: item.street.path.length * 2, // Estimate travel time based on path length
       transportMethods: ['car', 'emergency', 'foot'],
       routeName: item.street.name,
       geometry: {
@@ -134,7 +142,7 @@ const generateHighwayEvacuationRoutes = (): EvacuationRouteType[] => {
       startPoint: "Mistissini",
       endPoint: destinationName,
       status: Math.random() > 0.7 ? "congested" : "open",
-      estimatedTime: Math.max(20, highway.path.length), // Longer routes take more time
+      estimatedTime: Math.max(20, highway.path.length / 2), // Longer routes take more time
       transportMethods: ['car', 'emergency'],
       routeName: highway.name,
       geometry: {
@@ -160,8 +168,8 @@ const generateDroneResponders = (dangerZones: DangerZoneType[]) => {
     const zoneCoords = dangerZones[i].geometry.coordinates[0][0];
     
     // Add slight offset to position the drone near but not exactly on the danger zone
-    const latOffset = (Math.random() - 0.5) * 0.01; // Random offset within ~1km
-    const lngOffset = (Math.random() - 0.5) * 0.01;
+    const latOffset = (Math.random() - 0.5) * 0.005; // Random offset within ~500m
+    const lngOffset = (Math.random() - 0.5) * 0.005;
     
     drones.push({
       id: `drone-${i + 1}`,
@@ -201,8 +209,8 @@ const initialData: MapDataType = {
       type: 'fire',
       status: 'active',
       position: {
-        latitude: mistissiniLocation.center.lat + 0.003,
-        longitude: mistissiniLocation.center.lng - 0.003,
+        latitude: mistissiniLocation.center.lat + 0.002,
+        longitude: mistissiniLocation.center.lng - 0.002,
         locationName: 'Mistissini'
       }
     },
@@ -212,8 +220,8 @@ const initialData: MapDataType = {
       type: 'medical',
       status: 'en-route',
       position: {
-        latitude: mistissiniLocation.center.lat - 0.005,
-        longitude: mistissiniLocation.center.lng + 0.005,
+        latitude: mistissiniLocation.center.lat - 0.003,
+        longitude: mistissiniLocation.center.lng + 0.003,
         locationName: 'Mistissini Community Center'
       }
     },
@@ -234,8 +242,8 @@ const initialData: MapDataType = {
       type: 'police',
       status: 'active',
       position: {
-        latitude: mistissiniLocation.center.lat + 0.006,
-        longitude: mistissiniLocation.center.lng + 0.003,
+        latitude: mistissiniLocation.center.lat + 0.004,
+        longitude: mistissiniLocation.center.lng + 0.002,
         locationName: 'Northern Mistissini'
       }
     },
@@ -247,7 +255,7 @@ const initialData: MapDataType = {
       id: 'alert-1',
       severity: 'critical',
       title: 'Forest Fire Alert',
-      message: 'Active forest fire detected near Amisk Street. Immediate evacuation required via Wabushush Street.',
+      message: 'Active forest fire detected near Main Street. Immediate evacuation required via Saint John Street.',
       time: '13:45',
       location: 'Northern Mistissini',
       isNew: false,
@@ -267,7 +275,7 @@ const initialData: MapDataType = {
       id: 'alert-3',
       severity: 'critical',
       title: 'New Forest Fire',
-      message: 'New forest fire identified near Chief Isaiah Shecapio Road. Route 167 remains open for evacuation.',
+      message: 'New forest fire identified near Northern Boulevard. Route 167 remains open for evacuation.',
       time: '14:05',
       location: 'Eastern Shore',
       isNew: true,
@@ -277,7 +285,7 @@ const initialData: MapDataType = {
       id: 'alert-4', 
       severity: 'warning',
       title: 'Smoke Conditions',
-      message: 'Poor visibility on Wabushush Street due to smoke. Use Lake Shore Road as alternative.',
+      message: 'Poor visibility on Saint John Street due to smoke. Use Lakeshore Drive as alternative.',
       time: '18:30',
       location: 'Mistissini',
       isNew: false,
@@ -341,8 +349,8 @@ const getUpdatedData = (): MapDataType => {
       
       // Keep the drone moving around the closest fire zone with more movement
       const zoneCoord = closestZone.geometry.coordinates[0][0];
-      const targetLat = zoneCoord[1] + (Math.random() - 0.5) * 0.01;
-      const targetLng = zoneCoord[0] + (Math.random() - 0.5) * 0.01;
+      const targetLat = zoneCoord[1] + (Math.random() - 0.5) * 0.005;
+      const targetLng = zoneCoord[0] + (Math.random() - 0.5) * 0.005;
       
       // Move drone toward target with some randomness
       const moveSpeed = 0.001 + Math.random() * 0.002;
@@ -353,8 +361,8 @@ const getUpdatedData = (): MapDataType => {
       responder.position.longitude += lngDiff * moveSpeed;
     } else {
       // Regular responders move as before, but smaller movements to stay in Mistissini area
-      responder.position.latitude += (Math.random() - 0.5) * 0.003;
-      responder.position.longitude += (Math.random() - 0.5) * 0.003;
+      responder.position.latitude += (Math.random() - 0.5) * 0.002;
+      responder.position.longitude += (Math.random() - 0.5) * 0.002;
     }
   });
 
@@ -373,8 +381,8 @@ const getUpdatedData = (): MapDataType => {
       type: newResponderType,
       status: Math.random() > 0.5 ? 'active' : 'en-route',
       position: {
-        latitude: location.center.lat + (Math.random() - 0.5) * 0.01,
-        longitude: location.center.lng + (Math.random() - 0.5) * 0.01,
+        latitude: location.center.lat + (Math.random() - 0.5) * 0.005,
+        longitude: location.center.lng + (Math.random() - 0.5) * 0.005,
         locationName: location.name
       }
     });
@@ -391,8 +399,8 @@ const getUpdatedData = (): MapDataType => {
     data.dangerZones.forEach(zone => {
       zone.geometry.coordinates[0].forEach((coord, index) => {
         if (index > 0 && index < zone.geometry.coordinates[0].length - 1) {
-          coord[0] += (Math.random() - 0.5) * 0.005;
-          coord[1] += (Math.random() - 0.5) * 0.005;
+          coord[0] += (Math.random() - 0.5) * 0.003;
+          coord[1] += (Math.random() - 0.5) * 0.003;
         }
       });
     });
@@ -433,33 +441,37 @@ const getUpdatedData = (): MapDataType => {
     const visibilityOptions: Array<'public' | 'admin' | 'all'> = ['public', 'admin', 'all'];
     const visibility = visibilityOptions[Math.floor(Math.random() * visibilityOptions.length)];
     
-    // Get a random street name
-    const randomStreet = mistissiniStreets[Math.floor(Math.random() * mistissiniStreets.length)];
+    // Get a random street name from evacuation routes
+    const streetRoutes = data.evacuationRoutes.filter(route => 
+      !route.routeName?.includes("Route") && !route.routeName?.includes("Road to")
+    );
+    const randomRoute = streetRoutes[Math.floor(Math.random() * streetRoutes.length)];
+    const streetName = randomRoute?.routeName || "Main Street";
     
     // Street-specific alert templates
     const alertTemplates = {
       critical: {
         title: 'Street Closure Alert',
         messages: [
-          `${randomStreet.name} is now closed due to fire. Use alternate routes.`,
-          `Evacuation required immediately from ${randomStreet.name} area.`,
-          `Fire has reached ${randomStreet.name}. All residents must evacuate now.`
+          `${streetName} is now closed due to fire. Use alternate routes.`,
+          `Evacuation required immediately from ${streetName} area.`,
+          `Fire has reached ${streetName}. All residents must evacuate now.`
         ]
       },
       warning: {
         title: 'Street Congestion Warning',
         messages: [
-          `Heavy traffic on ${randomStreet.name}. Expect delays during evacuation.`,
-          `Smoke reducing visibility on ${randomStreet.name}. Proceed with caution.`,
-          `${randomStreet.name} experiencing congestion. Consider alternative routes.`
+          `Heavy traffic on ${streetName}. Expect delays during evacuation.`,
+          `Smoke reducing visibility on ${streetName}. Proceed with caution.`,
+          `${streetName} experiencing congestion. Consider alternative routes.`
         ]
       },
       info: {
         title: 'Street Update',
         messages: [
-          `${randomStreet.name} remains open for evacuation.`,
-          `Emergency services stationed along ${randomStreet.name} to assist evacuation.`,
-          `${randomStreet.name} has been designated as priority evacuation route.`
+          `${streetName} remains open for evacuation.`,
+          `Emergency services stationed along ${streetName} to assist evacuation.`,
+          `${streetName} has been designated as priority evacuation route.`
         ]
       }
     };
