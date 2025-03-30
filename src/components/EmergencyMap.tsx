@@ -31,7 +31,7 @@ function MapUpdater({ data }: { data: MapDataType }) {
     // Only set the initial view once when the component mounts
     if (!initialSetupDoneRef.current) {
       // Focus on Mistissini by default with a closer zoom level to see streets
-      map.setView([mistissiniLocation.center.lat, mistissiniLocation.center.lng], 14);
+      map.setView([mistissiniLocation.center.lat, mistissiniLocation.center.lng], 15);
       initialSetupDoneRef.current = true;
     }
   }, [map, data]);
@@ -101,7 +101,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
   return (
     <MapContainer 
       center={[mistissiniLocation.center.lat, mistissiniLocation.center.lng]} 
-      zoom={14} 
+      zoom={15} 
       style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
       className="z-0"
       zoomControl={true}
@@ -125,6 +125,27 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
         </Popup>
       </Marker>
       
+      {/* Evacuation routes */}
+      {data.evacuationRoutes.map((route) => (
+        <Polyline
+          key={route.id}
+          positions={route.geometry.coordinates.map(coord => [coord[1], coord[0]])}
+          pathOptions={{
+            color: route.status === 'open' ? '#22c55e' : route.status === 'congested' ? '#f59e0b' : '#ef4444',
+            weight: route.routeName?.includes("Route") || route.routeName?.includes("Road to") ? 5 : 3,
+            opacity: 0.9
+          }}
+        >
+          <Popup>
+            <div className="text-sm font-medium">{route.routeName || route.id}</div>
+            <div className="text-xs">From: {route.startPoint} to {route.endPoint}</div>
+            <div className="text-xs">Status: {route.status}</div>
+            <div className="text-xs">Estimated Time: {route.estimatedTime} min</div>
+            <div className="text-xs">Transport: {route.transportMethods.join(', ')}</div>
+          </Popup>
+        </Polyline>
+      ))}
+      
       {/* Danger zones - Forest Fires */}
       {data.dangerZones.map((zone) => (
         <Polygon
@@ -132,11 +153,11 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
           positions={zone.geometry.coordinates[0].map(coord => [coord[1], coord[0]])}
           pathOptions={{
             fillColor: '#ea384c',
-            fillOpacity: 0.3,
+            fillOpacity: 0.4,
             weight: 2,
-            opacity: 0.7,
+            opacity: 0.8,
             color: '#ea384c',
-            dashArray: '5, 5'
+            dashArray: '3, 3'
           }}
         >
           <Popup>
@@ -152,27 +173,6 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
             </div>
           </Popup>
         </Polygon>
-      ))}
-      
-      {/* Evacuation routes */}
-      {data.evacuationRoutes.map((route) => (
-        <Polyline
-          key={route.id}
-          positions={route.geometry.coordinates.map(coord => [coord[1], coord[0]])}
-          pathOptions={{
-            color: route.status === 'open' ? '#22c55e' : route.status === 'congested' ? '#f59e0b' : '#ef4444',
-            weight: 4,
-            opacity: 0.8
-          }}
-        >
-          <Popup>
-            <div className="text-sm font-medium">{route.routeName}</div>
-            <div className="text-xs">From: {route.startPoint} to {route.endPoint}</div>
-            <div className="text-xs">Status: {route.status}</div>
-            <div className="text-xs">Estimated Time: {route.estimatedTime} min</div>
-            <div className="text-xs">Transport: {route.transportMethods.join(', ')}</div>
-          </Popup>
-        </Polyline>
       ))}
       
       {/* Responders */}

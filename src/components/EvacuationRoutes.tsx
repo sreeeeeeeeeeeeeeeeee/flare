@@ -7,21 +7,25 @@ type EvacuationRoutesProps = {
 };
 
 const EvacuationRoutes = ({ routes }: EvacuationRoutesProps) => {
+  // First sort routes by status (open first, then congested, then closed)
   const sortedRoutes = [...routes].sort((a, b) => {
     if (a.status === 'open' && b.status !== 'open') return -1;
     if (a.status !== 'open' && b.status === 'open') return 1;
+    if (a.status === 'congested' && b.status === 'closed') return -1;
+    if (a.status === 'closed' && b.status === 'congested') return 1;
     return 0;
   });
 
-  // Group the routes by highway name for better organization
-  const groupedRoutes = sortedRoutes.reduce((acc, route) => {
-    const key = route.routeName || 'Other Routes';
-    if (!acc[key]) {
-      acc[key] = [];
-    }
-    acc[key].push(route);
-    return acc;
-  }, {} as Record<string, EvacuationRouteType[]>);
+  // Group the routes by category: local streets vs highways
+  const localRoutes = sortedRoutes.filter(route => 
+    !route.routeName?.includes('Route') && 
+    !route.routeName?.includes('Road to')
+  );
+  
+  const highwayRoutes = sortedRoutes.filter(route => 
+    route.routeName?.includes('Route') || 
+    route.routeName?.includes('Road to')
+  );
 
   return (
     <div className="border border-border rounded-lg bg-card flex flex-col overflow-hidden h-full">
@@ -32,72 +36,141 @@ const EvacuationRoutes = ({ routes }: EvacuationRoutesProps) => {
         </div>
       </div>
       
-      <div className="flex-grow overflow-y-auto p-2 space-y-2">
+      <div className="flex-grow overflow-y-auto p-2 space-y-4">
         {sortedRoutes.length === 0 ? (
           <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
             No evacuation routes available
           </div>
         ) : (
-          Object.entries(groupedRoutes).map(([routeName, routes]) => (
-            <div key={routeName} className="space-y-2">
-              <div className="text-xs font-semibold text-muted-foreground px-1">
-                {routeName}
-              </div>
-              
-              {routes.map(route => (
-                <div 
-                  key={route.id}
-                  className={`p-3 rounded border text-sm ${
-                    route.status === 'open' 
-                      ? 'bg-safe/10 border-safe' 
-                      : route.status === 'congested' 
-                        ? 'bg-warning/10 border-warning' 
-                        : 'bg-danger/10 border-danger'
-                  }`}
-                >
-                  <div className="flex items-start">
-                    <div className="flex-grow">
-                      <div className="font-medium flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        <span>{route.startPoint}</span>
-                        <ArrowRight className="h-3 w-3" />
-                        <span>{route.endPoint}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 mt-2">
-                        <div className={`text-xs px-2 py-0.5 rounded-full ${
-                          route.status === 'open' 
-                            ? 'bg-safe text-white' 
-                            : route.status === 'congested' 
-                              ? 'bg-warning text-white' 
-                              : 'bg-danger text-white'
-                        }`}>
-                          {route.status.toUpperCase()}
+          <>
+            {/* Highway Routes Section */}
+            {highwayRoutes.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-primary px-1">
+                  Regional Evacuation Routes
+                </div>
+                
+                {highwayRoutes.map(route => (
+                  <div 
+                    key={route.id}
+                    className={`p-3 rounded border text-sm ${
+                      route.status === 'open' 
+                        ? 'bg-safe/10 border-safe' 
+                        : route.status === 'congested' 
+                          ? 'bg-warning/10 border-warning' 
+                          : 'bg-danger/10 border-danger'
+                    }`}
+                  >
+                    <div className="flex items-start">
+                      <div className="flex-grow">
+                        <div className="font-medium">{route.routeName || 'Evacuation Route'}</div>
+                        
+                        <div className="text-xs mt-1 flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          <span>{route.startPoint}</span>
+                          <ArrowRight className="h-3 w-3" />
+                          <span>{route.endPoint}</span>
                         </div>
                         
-                        <div className="text-xs text-muted-foreground">
-                          {route.estimatedTime} min
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className={`text-xs px-2 py-0.5 rounded-full ${
+                            route.status === 'open' 
+                              ? 'bg-safe text-white' 
+                              : route.status === 'congested' 
+                                ? 'bg-warning text-white' 
+                                : 'bg-danger text-white'
+                          }`}>
+                            {route.status.toUpperCase()}
+                          </div>
+                          
+                          <div className="text-xs text-muted-foreground">
+                            {route.estimatedTime} min
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="mt-2 flex items-center gap-1">
-                        <span className="text-xs text-muted-foreground mr-1">Transport:</span>
-                        {route.transportMethods.includes('car') && (
-                          <Car className="h-3 w-3 text-muted-foreground" />
-                        )}
-                        {route.transportMethods.includes('emergency') && (
-                          <Truck className="h-3 w-3 text-muted-foreground" />
-                        )}
-                        {route.transportMethods.includes('foot') && (
-                          <PersonStanding className="h-3 w-3 text-muted-foreground" />
-                        )}
+                        
+                        <div className="mt-2 flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground mr-1">Transport:</span>
+                          {route.transportMethods.includes('car') && (
+                            <Car className="h-3 w-3 text-muted-foreground" />
+                          )}
+                          {route.transportMethods.includes('emergency') && (
+                            <Truck className="h-3 w-3 text-muted-foreground" />
+                          )}
+                          {route.transportMethods.includes('foot') && (
+                            <PersonStanding className="h-3 w-3 text-muted-foreground" />
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Local Routes Section */}
+            {localRoutes.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-primary px-1">
+                  Local Street Routes
                 </div>
-              ))}
-            </div>
-          ))
+                
+                {localRoutes.map(route => (
+                  <div 
+                    key={route.id}
+                    className={`p-3 rounded border text-sm ${
+                      route.status === 'open' 
+                        ? 'bg-safe/10 border-safe' 
+                        : route.status === 'congested' 
+                          ? 'bg-warning/10 border-warning' 
+                          : 'bg-danger/10 border-danger'
+                    }`}
+                  >
+                    <div className="flex items-start">
+                      <div className="flex-grow">
+                        <div className="font-medium">{route.routeName || 'Evacuation Route'}</div>
+                        
+                        <div className="text-xs mt-1 flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          <span>{route.startPoint}</span>
+                          <ArrowRight className="h-3 w-3" />
+                          <span>{route.endPoint}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className={`text-xs px-2 py-0.5 rounded-full ${
+                            route.status === 'open' 
+                              ? 'bg-safe text-white' 
+                              : route.status === 'congested' 
+                                ? 'bg-warning text-white' 
+                                : 'bg-danger text-white'
+                          }`}>
+                            {route.status.toUpperCase()}
+                          </div>
+                          
+                          <div className="text-xs text-muted-foreground">
+                            {route.estimatedTime} min
+                          </div>
+                        </div>
+                        
+                        <div className="mt-2 flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground mr-1">Transport:</span>
+                          {route.transportMethods.includes('car') && (
+                            <Car className="h-3 w-3 text-muted-foreground" />
+                          )}
+                          {route.transportMethods.includes('emergency') && (
+                            <Truck className="h-3 w-3 text-muted-foreground" />
+                          )}
+                          {route.transportMethods.includes('foot') && (
+                            <PersonStanding className="h-3 w-3 text-muted-foreground" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
