@@ -85,3 +85,84 @@ export const evacuationDestinations = [
     description: 'Cree community to the southwest'
   }
 ];
+
+// Main highways and roads in the Mistissini area
+export const mistissiniHighways = [
+  {
+    name: "Route 167",
+    description: "Main highway connecting Mistissini to Chibougamau",
+    path: [
+      // Mistissini to Chibougamau
+      [50.4221, -73.8683], // Mistissini start
+      [50.4780, -73.8521], 
+      [50.5402, -73.8390],
+      [50.6104, -73.8324],
+      [50.6797, -73.8201],
+      [50.7521, -73.8102],
+      [50.8234, -73.8044],
+      [50.9067, -73.7978],
+      [50.9812, -73.7902],
+      [51.0379, -73.7892]  // Chibougamau end
+    ]
+  },
+  {
+    name: "Route du Nord",
+    description: "Road connecting Mistissini to western communities",
+    path: [
+      // Mistissini to Route du Nord junction
+      [50.4221, -73.8683], // Mistissini start
+      [50.4015, -73.9284],
+      [50.3824, -73.9876],
+      [50.3612, -74.0487],
+      [50.3425, -74.1102],
+      [50.2854, -74.2193]  // Route du Nord point
+    ]
+  },
+  {
+    name: "Oujé-Bougoumou Road",
+    description: "Road connecting to Oujé-Bougoumou",
+    path: [
+      // From Route 167 to Oujé-Bougoumou
+      [50.6104, -73.8324], // Junction point on Route 167
+      [50.5981, -73.8762],
+      [50.5823, -73.9214],
+      [50.5692, -73.9657],
+      [50.5534, -74.0102],
+      [50.5276, -74.0452]  // Oujé-Bougoumou
+    ]
+  },
+  {
+    name: "Waswanipi Route",
+    description: "Long route to Waswanipi",
+    path: [
+      // From Route du Nord junction toward Waswanipi
+      [50.2854, -74.2193], // Route du Nord point
+      [50.2432, -74.3215],
+      [50.2011, -74.4542],
+      [50.1587, -74.5876],
+      [50.1102, -74.7231],
+      [50.0619, -74.8543],
+      [50.0121, -74.9876],
+      [49.9534, -75.1231],
+      [49.8967, -75.2654],
+      [49.8342, -75.4121],
+      [49.7923, -75.5654],
+      [49.7735, -75.7234],
+      [49.7653, -75.8543],
+      [49.7569, -75.9664]  // Waswanipi
+    ]
+  },
+  {
+    name: "Lake Mistassini Shore Road",
+    description: "Road along the lake shore",
+    path: [
+      // Mistissini along the lake shore
+      [50.4221, -73.8683], // Mistissini start
+      [50.4189, -73.8572],
+      [50.4154, -73.8492],
+      [50.4107, -73.8462], // Lake Mistassini point
+      [50.4062, -73.8423],
+      [50.4015, -73.8375]
+    ]
+  }
+];

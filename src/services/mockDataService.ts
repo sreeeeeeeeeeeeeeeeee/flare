@@ -1,5 +1,5 @@
 import { MapDataType, EvacuationRouteType, DangerZoneType } from '@/types/emergency';
-import { mistissiniLocation, mistissiniRegions, mistissiniForestRegions, evacuationDestinations } from './mistissiniData';
+import { mistissiniLocation, mistissiniRegions, mistissiniForestRegions, evacuationDestinations, mistissiniHighways } from './mistissiniData';
 
 // Sample YouTube video - keeping only one video feed
 const droneVideo = 'https://youtu.be/uRFrHhBKAto';
@@ -53,54 +53,26 @@ const generateInitialForestFireZones = (count: number = 4): DangerZoneType[] => 
   return zones;
 };
 
-// Generate a realistic evacuation route from Mistissini to a destination
-const generateEvacuationRoute = (startRegionIndex: number, destinationIndex: number, id: string): EvacuationRouteType => {
-  const startRegion = mistissiniRegions[startRegionIndex];
-  const destination = evacuationDestinations[destinationIndex];
+// Generate a realistic evacuation route following highways
+const generateHighwayEvacuationRoute = (
+  highwayIndex: number, 
+  destinationName: string, 
+  id: string
+): EvacuationRouteType => {
+  const highway = mistissiniHighways[highwayIndex];
   
-  // Generate a route with multiple points to make it look more realistic
-  const numPoints = 2 + Math.floor(Math.random() * 3); // 2-4 intermediate points
-  const points = [];
+  // Convert the highway path to the expected format for the route geometry
+  const coordinates = highway.path.map(point => [point[1], point[0]]);
   
-  // Start point
-  points.push([startRegion.center.lng, startRegion.center.lat]);
+  // Determine transport methods based on the highway
+  const transportMethods: Array<'car' | 'foot' | 'emergency'> = ['car', 'emergency'];
   
-  // Add intermediate points with some randomness
-  for (let i = 1; i <= numPoints; i++) {
-    const progress = i / (numPoints + 1);
-    const baseLng = startRegion.center.lng + (destination.lng - startRegion.center.lng) * progress;
-    const baseLat = startRegion.center.lat + (destination.lat - startRegion.center.lat) * progress;
-    
-    // Add some deviation to make the route look more natural
-    const deviation = 0.03 - (progress * 0.01); // Less deviation as we get closer to destination
-    points.push([
-      baseLng + (Math.random() - 0.5) * deviation,
-      baseLat + (Math.random() - 0.5) * deviation
-    ]);
+  // Add 'foot' for shorter routes or if it's the Lake Shore route
+  if (highway.name === "Lake Mistassini Shore Road" || coordinates.length < 6) {
+    transportMethods.push('foot');
   }
   
-  // End with the destination
-  points.push([destination.lng, destination.lat]);
-  
-  // Calculate a rough distance-based estimated time (in minutes)
-  const distance = Math.sqrt(
-    Math.pow(startRegion.center.lat - destination.lat, 2) + 
-    Math.pow(startRegion.center.lng - destination.lng, 2)
-  ) * 111; // roughly km per degree at this latitude
-  const estimatedTime = Math.round(distance * 1.2); // ~1.2 minutes per km is about 50km/h
-  
-  // Transport methods
-  const transportMethodOptions: Array<'car' | 'foot' | 'emergency'> = ['car', 'foot', 'emergency'];
-  const transportMethods: Array<'car' | 'foot' | 'emergency'> = [];
-  
-  // Always include at least one transport method
-  transportMethods.push('car');
-  
-  // Randomly add other transport methods
-  if (Math.random() > 0.5) transportMethods.push('emergency');
-  if (Math.random() > 0.7) transportMethods.push('foot');
-  
-  // Route statuses with weighted randomness
+  // Determine status based on weighted randomness
   const statusOptions: Array<'open' | 'congested' | 'closed'> = ['open', 'congested', 'closed'];
   const statusWeights = [0.6, 0.3, 0.1]; // 60% open, 30% congested, 10% closed
   
@@ -116,46 +88,42 @@ const generateEvacuationRoute = (startRegionIndex: number, destinationIndex: num
     }
   }
   
+  // Calculate a rough estimate of travel time based on the number of points
+  // Assuming each segment takes about 3-7 minutes to travel
+  const estimatedTime = Math.max(10, Math.round(coordinates.length * (3 + Math.random() * 4)));
+  
   return {
     id,
-    startPoint: startRegion.name,
-    endPoint: destination.name,
+    startPoint: "Mistissini",
+    endPoint: destinationName,
     status: statusOptions[selectedStatusIndex],
     estimatedTime,
     transportMethods,
     geometry: {
       type: 'LineString',
-      coordinates: points
+      coordinates
     }
   };
 };
 
-// Generate evacuation routes from Mistissini
-const generateEvacuationRoutes = (count: number = 3): EvacuationRouteType[] => {
+// Generate evacuation routes based on actual highways
+const generateEvacuationRoutes = (): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
   
-  // Create routes from Mistissini to different destinations
-  for (let i = 0; i < count; i++) {
-    // Start from different parts of Mistissini
-    const startRegionIndex = Math.floor(Math.random() * mistissiniRegions.length);
-    
-    // Go to different destinations (make sure we don't go to the same destination twice)
-    const destinationOptions = [...Array(evacuationDestinations.length).keys()];
-    const usedDestinations = new Set<number>();
-    
-    // Add 1-2 routes per start region
-    const numRoutes = 1 + Math.floor(Math.random() * 2);
-    for (let j = 0; j < numRoutes && routes.length < count; j++) {
-      // Find an unused destination
-      let destinationIndex;
-      do {
-        destinationIndex = destinationOptions[Math.floor(Math.random() * destinationOptions.length)];
-      } while (usedDestinations.has(destinationIndex));
-      
-      usedDestinations.add(destinationIndex);
-      routes.push(generateEvacuationRoute(startRegionIndex, destinationIndex, `route-${routes.length + 1}`));
-    }
-  }
+  // Route 167 to Chibougamau
+  routes.push(generateHighwayEvacuationRoute(0, "Chibougamau", "route-1"));
+  
+  // Route du Nord
+  routes.push(generateHighwayEvacuationRoute(1, "Route du Nord", "route-2"));
+  
+  // Oujé-Bougoumou Road
+  routes.push(generateHighwayEvacuationRoute(2, "Oujé-Bougoumou", "route-3"));
+  
+  // Waswanipi Route
+  routes.push(generateHighwayEvacuationRoute(3, "Waswanipi", "route-4"));
+  
+  // Lake Shore Road
+  routes.push(generateHighwayEvacuationRoute(4, "Lake Shore", "route-5"));
   
   return routes;
 };
@@ -248,7 +216,7 @@ const initialData: MapDataType = {
     },
   ],
   dangerZones: initialDangerZones,
-  evacuationRoutes: generateEvacuationRoutes(4),
+  evacuationRoutes: generateEvacuationRoutes(),
   alerts: [
     {
       id: 'alert-1',
@@ -303,8 +271,8 @@ const initialData: MapDataType = {
   ]
 };
 
-// Function to update existing route or generate a new one
-const updateEvacuationRoute = (routes: EvacuationRouteType[], index: number): EvacuationRouteType => {
+// Function to update an evacuation route's status
+const updateEvacuationRouteStatus = (routes: EvacuationRouteType[], index: number): EvacuationRouteType => {
   // Just update the status
   const updatedRoute = { ...routes[index] };
   const statusOptions: Array<'open' | 'congested' | 'closed'> = ['open', 'congested', 'closed'];
@@ -426,11 +394,11 @@ const getUpdatedData = (): MapDataType => {
     });
   }
   
-  // Update evacuation routes
-  // 30% chance to update a random route
+  // Update evacuation routes (status changes only, path stays the same)
+  // 30% chance to update a random route's status
   if (Math.random() < 0.3 && data.evacuationRoutes.length > 0) {
     const routeIndex = Math.floor(Math.random() * data.evacuationRoutes.length);
-    data.evacuationRoutes[routeIndex] = updateEvacuationRoute(data.evacuationRoutes, routeIndex);
+    data.evacuationRoutes[routeIndex] = updateEvacuationRouteStatus(data.evacuationRoutes, routeIndex);
   }
   
   // Sometimes add a new forest fire related alert

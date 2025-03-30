@@ -1,5 +1,5 @@
 
-import { ArrowRight, Route, Car, Truck, PersonStanding } from 'lucide-react';
+import { ArrowRight, Route, Car, Truck, PersonStanding, MapPin } from 'lucide-react';
 import { EvacuationRouteType } from '@/types/emergency';
 
 type EvacuationRoutesProps = {
@@ -42,6 +42,7 @@ const EvacuationRoutes = ({ routes }: EvacuationRoutesProps) => {
               <div className="flex items-start">
                 <div className="flex-grow">
                   <div className="font-medium flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
                     <span>{route.startPoint}</span>
                     <ArrowRight className="h-3 w-3" />
                     <span>{route.endPoint}</span>
