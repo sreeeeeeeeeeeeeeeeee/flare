@@ -1,57 +1,23 @@
 import { MapDataType, EvacuationRouteType, DangerZoneType } from '@/types/emergency';
+import { mistissiniLocation, mistissiniRegions, mistissiniForestRegions, evacuationDestinations } from './mistissiniData';
 
 // Sample YouTube video - keeping only one video feed
 const droneVideo = 'https://youtu.be/uRFrHhBKAto';
 
-// Ontario cities with their coordinates
-const ontarioCities = [
-  { name: 'Toronto', lat: 43.6532, lng: -79.3832 },
-  { name: 'Ottawa', lat: 45.4215, lng: -75.6972 },
-  { name: 'Hamilton', lat: 43.2557, lng: -79.8711 },
-  { name: 'London', lat: 42.9849, lng: -81.2453 },
-  { name: 'Kingston', lat: 44.2312, lng: -76.4860 },
-  { name: 'Windsor', lat: 42.3149, lng: -83.0364 },
-  { name: 'Sudbury', lat: 46.4917, lng: -80.9930 },
-  { name: 'Thunder Bay', lat: 48.3809, lng: -89.2477 },
-  { name: 'Barrie', lat: 44.3894, lng: -79.6903 },
-  { name: 'Guelph', lat: 43.5448, lng: -80.2482 },
-  { name: 'North Bay', lat: 46.3091, lng: -79.4608 },
-  { name: 'Peterborough', lat: 44.3091, lng: -78.3197 },
-  { name: 'Sault Ste. Marie', lat: 46.5136, lng: -84.3358 },
-  { name: 'Brampton', lat: 43.7315, lng: -79.7624 },
-  { name: 'Mississauga', lat: 43.5890, lng: -79.6441 },
-  { name: 'Dryden', lat: 49.7797, lng: -92.8370 },
-  { name: 'Timmins', lat: 48.4758, lng: -81.3305 },
-  { name: 'Vaughan', lat: 43.8361, lng: -79.5001 }
-];
-
-// Ontario forest regions
-const ontarioForestRegions = [
-  'Algonquin Provincial Park',
-  'Temagami Forest',
-  'Boreal Forest',
-  'Great Lakes-St. Lawrence Forest',
-  'Georgian Bay Forest',
-  'Quetico Provincial Park',
-  'Wabakimi Provincial Park',
-  'Lake Superior Provincial Park',
-  'Killarney Provincial Park'
-];
-
-// Generate a realistic forest fire zone 
-const generateForestFireZone = (nearCity: number, id: string): DangerZoneType => {
-  const city = ontarioCities[nearCity];
+// Generate a realistic forest fire zone around Mistissini
+const generateForestFireZone = (nearRegion: number, id: string): DangerZoneType => {
+  const region = mistissiniRegions[nearRegion];
   const riskLevels: Array<'high' | 'medium' | 'low'> = ['high', 'medium', 'low'];
   
-  // Create an irregular polygon around the city
-  const radius = 0.05 + Math.random() * 0.1; // Random radius between 0.05 and 0.15 degrees
+  // Create an irregular polygon around the region
+  const radius = 0.02 + Math.random() * 0.04; // Random radius between 0.02 and 0.06 degrees
   const sides = 5 + Math.floor(Math.random() * 3); // 5-7 sides for the polygon
   const coordinates = [];
   
   for (let i = 0; i < sides; i++) {
     const angle = (i / sides) * Math.PI * 2;
-    const lng = city.lng + Math.cos(angle) * radius * (0.8 + Math.random() * 0.4); // Add irregularity
-    const lat = city.lat + Math.sin(angle) * radius * (0.8 + Math.random() * 0.4);
+    const lng = region.center.lng + Math.cos(angle) * radius * (0.8 + Math.random() * 0.4); // Add irregularity
+    const lat = region.center.lat + Math.sin(angle) * radius * (0.8 + Math.random() * 0.4);
     coordinates.push([lng, lat]);
   }
   
@@ -62,7 +28,7 @@ const generateForestFireZone = (nearCity: number, id: string): DangerZoneType =>
     id,
     type: 'wildfire', // Always wildfire for forest fires
     riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
-    forestRegion: ontarioForestRegions[Math.floor(Math.random() * ontarioForestRegions.length)],
+    forestRegion: mistissiniForestRegions[Math.floor(Math.random() * mistissiniForestRegions.length)],
     geometry: {
       type: 'Polygon',
       coordinates: [coordinates]
@@ -70,131 +36,60 @@ const generateForestFireZone = (nearCity: number, id: string): DangerZoneType =>
   };
 };
 
-// Function to generate initial forest fire zones
-const generateInitialForestFireZones = (count: number = 8): DangerZoneType[] => {
+// Function to generate initial forest fire zones around Mistissini
+const generateInitialForestFireZones = (count: number = 4): DangerZoneType[] => {
   const zones: DangerZoneType[] = [];
-  const usedCities = new Set<number>();
+  const usedRegions = new Set<number>();
   
-  // Prefer northern cities for forest fires (more forested areas)
-  const northernCities = [6, 7, 9, 10, 12, 15, 16]; // Indices of more northern cities
-  
-  // Add some northern forest fires first
-  for (const cityIndex of northernCities) {
-    if (zones.length < count * 0.7) { // 70% of fires in northern areas
-      zones.push(generateForestFireZone(cityIndex, `zone-${zones.length + 1}`));
-      usedCities.add(cityIndex);
-    }
-  }
-  
-  // Fill the rest with random locations
-  while (zones.length < count) {
-    const cityIndex = Math.floor(Math.random() * ontarioCities.length);
-    if (!usedCities.has(cityIndex)) {
-      zones.push(generateForestFireZone(cityIndex, `zone-${zones.length + 1}`));
-      usedCities.add(cityIndex);
+  // Generate fires in different regions around Mistissini
+  while (zones.length < count && usedRegions.size < mistissiniRegions.length) {
+    const regionIndex = Math.floor(Math.random() * mistissiniRegions.length);
+    if (!usedRegions.has(regionIndex)) {
+      zones.push(generateForestFireZone(regionIndex, `zone-${zones.length + 1}`));
+      usedRegions.add(regionIndex);
     }
   }
   
   return zones;
 };
 
-// Function to find the nearest city to a given danger zone
-const findNearestCityToDangerZone = (zone: DangerZoneType): number => {
-  // Use the first coordinate of the polygon as a reference point
-  const zoneLng = zone.geometry.coordinates[0][0][0];
-  const zoneLat = zone.geometry.coordinates[0][0][1];
-  
-  let minDistance = Number.MAX_VALUE;
-  let closestCityIndex = 0;
-  
-  ontarioCities.forEach((city, index) => {
-    const distance = Math.sqrt(
-      Math.pow(city.lat - zoneLat, 2) + 
-      Math.pow(city.lng - zoneLng, 2)
-    );
-    
-    if (distance < minDistance) {
-      minDistance = distance;
-      closestCityIndex = index;
-    }
-  });
-  
-  return closestCityIndex;
-};
-
-// Function to find a city near a danger zone
-const findCityNearDangerZone = (zone: DangerZoneType, excludeCity: number): number => {
-  // Use the first coordinate of the polygon as a reference point
-  const zoneLng = zone.geometry.coordinates[0][0][0];
-  const zoneLat = zone.geometry.coordinates[0][0][1];
-  
-  // Calculate distances to all cities
-  const cityDistances = ontarioCities.map((city, index) => ({
-    index,
-    distance: Math.sqrt(Math.pow(city.lat - zoneLat, 2) + Math.pow(city.lng - zoneLng, 2))
-  }));
-  
-  // Sort by distance
-  cityDistances.sort((a, b) => a.distance - b.distance);
-  
-  // Find the nearest city that isn't excluded
-  for (const cityDist of cityDistances) {
-    if (cityDist.index !== excludeCity) {
-      return cityDist.index;
-    }
-  }
-  
-  // Fallback to a random city
-  let randomCity = Math.floor(Math.random() * ontarioCities.length);
-  while (randomCity === excludeCity) {
-    randomCity = Math.floor(Math.random() * ontarioCities.length);
-  }
-  return randomCity;
-};
-
-// Function to generate a realistic evacuation route from a forest fire zone to a safe city
-const generateEvacuationRouteFromDangerZone = (zone: DangerZoneType, id: string): EvacuationRouteType => {
-  // Find the nearest city to the danger zone
-  const nearestCityIndex = findNearestCityToDangerZone(zone);
-  
-  // Find another city as destination (preferably further from the danger zone)
-  const destinationCityIndex = findCityNearDangerZone(zone, nearestCityIndex);
-  
-  const startCity = ontarioCities[nearestCityIndex];
-  const endCity = ontarioCities[destinationCityIndex];
+// Generate a realistic evacuation route from Mistissini to a destination
+const generateEvacuationRoute = (startRegionIndex: number, destinationIndex: number, id: string): EvacuationRouteType => {
+  const startRegion = mistissiniRegions[startRegionIndex];
+  const destination = evacuationDestinations[destinationIndex];
   
   // Generate a route with multiple points to make it look more realistic
   const numPoints = 2 + Math.floor(Math.random() * 3); // 2-4 intermediate points
   const points = [];
   
-  // Start with the city near the danger zone
-  points.push([startCity.lng, startCity.lat]);
+  // Start point
+  points.push([startRegion.center.lng, startRegion.center.lat]);
   
-  // Add intermediate points with some randomness, but generally moving toward the destination
+  // Add intermediate points with some randomness
   for (let i = 1; i <= numPoints; i++) {
     const progress = i / (numPoints + 1);
-    const baseLng = startCity.lng + (endCity.lng - startCity.lng) * progress;
-    const baseLat = startCity.lat + (endCity.lat - startCity.lat) * progress;
+    const baseLng = startRegion.center.lng + (destination.lng - startRegion.center.lng) * progress;
+    const baseLat = startRegion.center.lat + (destination.lat - startRegion.center.lat) * progress;
     
     // Add some deviation to make the route look more natural
-    const deviation = 0.05 - (progress * 0.02); // Less deviation as we get closer to destination
+    const deviation = 0.03 - (progress * 0.01); // Less deviation as we get closer to destination
     points.push([
       baseLng + (Math.random() - 0.5) * deviation,
       baseLat + (Math.random() - 0.5) * deviation
     ]);
   }
   
-  // End with the destination city
-  points.push([endCity.lng, endCity.lat]);
+  // End with the destination
+  points.push([destination.lng, destination.lat]);
   
   // Calculate a rough distance-based estimated time (in minutes)
   const distance = Math.sqrt(
-    Math.pow(startCity.lat - endCity.lat, 2) + 
-    Math.pow(startCity.lng - endCity.lng, 2)
-  ) * 111; // roughly km per degree at Ontario's latitude
+    Math.pow(startRegion.center.lat - destination.lat, 2) + 
+    Math.pow(startRegion.center.lng - destination.lng, 2)
+  ) * 111; // roughly km per degree at this latitude
   const estimatedTime = Math.round(distance * 1.2); // ~1.2 minutes per km is about 50km/h
   
-  // Random transport methods
+  // Transport methods
   const transportMethodOptions: Array<'car' | 'foot' | 'emergency'> = ['car', 'foot', 'emergency'];
   const transportMethods: Array<'car' | 'foot' | 'emergency'> = [];
   
@@ -205,7 +100,7 @@ const generateEvacuationRouteFromDangerZone = (zone: DangerZoneType, id: string)
   if (Math.random() > 0.5) transportMethods.push('emergency');
   if (Math.random() > 0.7) transportMethods.push('foot');
   
-  // Route statuses with weighted randomness (open more likely)
+  // Route statuses with weighted randomness
   const statusOptions: Array<'open' | 'congested' | 'closed'> = ['open', 'congested', 'closed'];
   const statusWeights = [0.6, 0.3, 0.1]; // 60% open, 30% congested, 10% closed
   
@@ -223,8 +118,8 @@ const generateEvacuationRouteFromDangerZone = (zone: DangerZoneType, id: string)
   
   return {
     id,
-    startPoint: startCity.name,
-    endPoint: endCity.name,
+    startPoint: startRegion.name,
+    endPoint: destination.name,
     status: statusOptions[selectedStatusIndex],
     estimatedTime,
     transportMethods,
@@ -235,19 +130,32 @@ const generateEvacuationRouteFromDangerZone = (zone: DangerZoneType, id: string)
   };
 };
 
-// Generate evacuation routes from danger zones
-const generateEvacuationRoutesFromDangerZones = (dangerZones: DangerZoneType[]): EvacuationRouteType[] => {
+// Generate evacuation routes from Mistissini
+const generateEvacuationRoutes = (count: number = 3): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
   
-  // Create at least one route per danger zone
-  dangerZones.forEach((zone, index) => {
-    routes.push(generateEvacuationRouteFromDangerZone(zone, `route-${index + 1}`));
+  // Create routes from Mistissini to different destinations
+  for (let i = 0; i < count; i++) {
+    // Start from different parts of Mistissini
+    const startRegionIndex = Math.floor(Math.random() * mistissiniRegions.length);
     
-    // 50% chance to add a second route for this danger zone
-    if (Math.random() > 0.5) {
-      routes.push(generateEvacuationRouteFromDangerZone(zone, `route-${index + 1}-alt`));
+    // Go to different destinations (make sure we don't go to the same destination twice)
+    const destinationOptions = [...Array(evacuationDestinations.length).keys()];
+    const usedDestinations = new Set<number>();
+    
+    // Add 1-2 routes per start region
+    const numRoutes = 1 + Math.floor(Math.random() * 2);
+    for (let j = 0; j < numRoutes && routes.length < count; j++) {
+      // Find an unused destination
+      let destinationIndex;
+      do {
+        destinationIndex = destinationOptions[Math.floor(Math.random() * destinationOptions.length)];
+      } while (usedDestinations.has(destinationIndex));
+      
+      usedDestinations.add(destinationIndex);
+      routes.push(generateEvacuationRoute(startRegionIndex, destinationIndex, `route-${routes.length + 1}`));
     }
-  });
+  }
   
   return routes;
 };
@@ -256,7 +164,7 @@ const generateEvacuationRoutesFromDangerZones = (dangerZones: DangerZoneType[]):
 const generateDroneResponders = (dangerZones: DangerZoneType[]) => {
   const drones = [];
   
-  // Determine how many drones to create (4-5 as requested)
+  // Determine how many drones to create (4-5)
   const droneCount = 4 + Math.floor(Math.random() * 2); // 4 or 5 drones
   
   // For each drone, position it near a danger zone
@@ -265,12 +173,8 @@ const generateDroneResponders = (dangerZones: DangerZoneType[]) => {
     const zoneCoords = dangerZones[i].geometry.coordinates[0][0];
     
     // Add slight offset to position the drone near but not exactly on the danger zone
-    const latOffset = (Math.random() - 0.5) * 0.05; // Random offset within ~5km
-    const lngOffset = (Math.random() - 0.5) * 0.05;
-    
-    // Find the nearest city for location naming
-    const nearestCityIndex = findNearestCityToDangerZone(dangerZones[i]);
-    const nearestCity = ontarioCities[nearestCityIndex];
+    const latOffset = (Math.random() - 0.5) * 0.02; // Random offset within ~2km
+    const lngOffset = (Math.random() - 0.5) * 0.02;
     
     drones.push({
       id: `drone-${i + 1}`,
@@ -280,7 +184,7 @@ const generateDroneResponders = (dangerZones: DangerZoneType[]) => {
       position: {
         latitude: zoneCoords[1] + latOffset,
         longitude: zoneCoords[0] + lngOffset,
-        locationName: `${nearestCity.name} Forest Region`
+        locationName: `${dangerZones[i].forestRegion || 'Mistissini Forest'}`
       }
     });
   }
@@ -288,98 +192,103 @@ const generateDroneResponders = (dangerZones: DangerZoneType[]) => {
   return drones;
 };
 
-// Initial data state - updated with more forest fire zones and realistic evacuation routes
-const initialDangerZones = generateInitialForestFireZones(8); // 8 initial forest fire zones
+// Generate initial danger zones focused on Mistissini
+const initialDangerZones = generateInitialForestFireZones(4);
 const initialDrones = generateDroneResponders(initialDangerZones);
 
+// Initial data state focused on Mistissini
 const initialData: MapDataType = {
   responders: [
-    // Include generated drones at the beginning of the responders array
+    // Include generated drones
     ...initialDrones,
-    // Keep original responders but remove the single drone that was there before
+    // Add other responders in the Mistissini area
     {
       id: 'resp-1',
-      name: 'Fire Squad A',
+      name: 'Mistissini Fire Squad',
       type: 'fire',
       status: 'active',
       position: {
-        latitude: 46.4917,
-        longitude: -80.9930,
-        locationName: 'Sudbury'
+        latitude: mistissiniLocation.center.lat + 0.01,
+        longitude: mistissiniLocation.center.lng - 0.01,
+        locationName: 'Mistissini'
       }
     },
     {
       id: 'resp-3',
-      name: 'Medical Team B',
+      name: 'Medical Team',
       type: 'medical',
       status: 'en-route',
       position: {
-        latitude: 49.7797, 
-        longitude: -92.8370,
-        locationName: 'Dryden'
+        latitude: mistissiniLocation.center.lat - 0.015,
+        longitude: mistissiniLocation.center.lng + 0.02,
+        locationName: 'Mistissini Community Center'
       }
     },
     {
       id: 'resp-4',
-      name: 'Fire Squad C',
+      name: 'Regional Fire Support',
       type: 'fire',
-      status: 'active',
+      status: 'en-route',
       position: {
-        latitude: 48.4758,
-        longitude: -81.3305,
-        locationName: 'Timmins'
+        latitude: evacuationDestinations[0].lat - 0.2,
+        longitude: evacuationDestinations[0].lng + 0.1,
+        locationName: 'En route from Chibougamau'
       }
     },
     {
       id: 'resp-5',
-      name: 'Police Unit 7',
+      name: 'Quebec Police',
       type: 'police',
-      status: 'en-route',
+      status: 'active',
       position: {
-        latitude: 46.3091,
-        longitude: -79.4608,
-        locationName: 'North Bay'
+        latitude: mistissiniLocation.center.lat + 0.025,
+        longitude: mistissiniLocation.center.lng + 0.01,
+        locationName: 'Northern Mistissini'
       }
     },
   ],
   dangerZones: initialDangerZones,
-  evacuationRoutes: generateEvacuationRoutesFromDangerZones(initialDangerZones),
+  evacuationRoutes: generateEvacuationRoutes(4),
   alerts: [
     {
       id: 'alert-1',
       severity: 'critical',
       title: 'Forest Fire Alert',
-      message: 'Active forest fire detected in Algonquin Provincial Park. Immediate evacuation required.',
+      message: 'Active forest fire detected in Mistissini Boreal Forest. Immediate evacuation required for northern sectors.',
       time: '13:45',
-      location: 'Algonquin Provincial Park',
-      isNew: false
+      location: 'Northern Mistissini',
+      isNew: false,
+      visibility: 'all'
     },
     {
       id: 'alert-2',
       severity: 'warning',
       title: 'Drone Deployment',
-      message: 'Surveillance drones deployed to monitor forest fire perimeters in Northern Ontario.',
+      message: 'Surveillance drones deployed to monitor forest fire perimeters around Lake Mistassini.',
       time: '13:30',
-      location: 'Northern Ontario',
-      isNew: true
+      location: 'Mistissini Region',
+      isNew: true,
+      visibility: 'admin'
     },
     {
       id: 'alert-3',
       severity: 'critical',
       title: 'New Forest Fire',
-      message: 'New forest fire identified in Temagami Forest. Please avoid the area.',
+      message: 'New forest fire identified in Lake Mistassini Shoreline Forest. Please avoid the eastern shore area.',
       time: '14:05',
-      location: 'Temagami',
-      isNew: true
+      location: 'Eastern Shore',
+      isNew: true,
+      visibility: 'all'
     },
     {
       id: 'alert-4', 
       severity: 'warning',
       title: 'Smoke Conditions',
-      message: 'Poor visibility due to smoke from forest fires. Use caution when driving in Northern Ontario.',
+      message: 'Poor visibility due to smoke from forest fires. Use caution when driving in the Mistissini area.',
       time: '18:30',
-      location: 'Northern Ontario',
-      isNew: false
+      location: 'Mistissini Region',
+      isNew: false,
+      visibility: 'public'
     }
   ],
   videoFeeds: [
@@ -387,39 +296,16 @@ const initialData: MapDataType = {
       id: 'video-1',
       type: 'drone',
       source: droneVideo,
-      location: 'Northern Ontario Forest Fire Zone',
+      location: 'Mistissini Forest Fire Zone',
       hasAlert: true,
       relatedFeeds: [] // Empty related feeds
     }
   ]
 };
 
-// Function to update existing route or generate a new one related to a danger zone
-const updateEvacuationRoute = (routes: EvacuationRouteType[], index: number, dangerZones: DangerZoneType[]): EvacuationRouteType => {
-  // If there are no danger zones, use the old method
-  if (dangerZones.length === 0) {
-    // Just update the status
-    const updatedRoute = { ...routes[index] };
-    const statusOptions: Array<'open' | 'congested' | 'closed'> = ['open', 'congested', 'closed'];
-    updatedRoute.status = statusOptions[Math.floor(Math.random() * statusOptions.length)];
-    
-    // Sometimes update the estimated time as well
-    if (Math.random() > 0.7) {
-      const currentTime = updatedRoute.estimatedTime;
-      const adjustment = Math.round((Math.random() - 0.5) * 20); // +/- 20 minutes max
-      updatedRoute.estimatedTime = Math.max(5, currentTime + adjustment); // Ensure at least 5 minutes
-    }
-    
-    return updatedRoute;
-  }
-  
-  // 20% chance to generate a completely new route from a random danger zone
-  if (Math.random() < 0.2) {
-    const randomZoneIndex = Math.floor(Math.random() * dangerZones.length);
-    return generateEvacuationRouteFromDangerZone(dangerZones[randomZoneIndex], routes[index].id);
-  }
-  
-  // Otherwise just update the status
+// Function to update existing route or generate a new one
+const updateEvacuationRoute = (routes: EvacuationRouteType[], index: number): EvacuationRouteType => {
+  // Just update the status
   const updatedRoute = { ...routes[index] };
   const statusOptions: Array<'open' | 'congested' | 'closed'> = ['open', 'congested', 'closed'];
   updatedRoute.status = statusOptions[Math.floor(Math.random() * statusOptions.length)];
@@ -429,12 +315,12 @@ const updateEvacuationRoute = (routes: EvacuationRouteType[], index: number, dan
     const currentTime = updatedRoute.estimatedTime;
     const adjustment = Math.round((Math.random() - 0.5) * 20); // +/- 20 minutes max
     updatedRoute.estimatedTime = Math.max(5, currentTime + adjustment); // Ensure at least 5 minutes
-    }
+  }
   
   return updatedRoute;
 };
 
-// Function to create slightly different data to simulate real-time updates
+// Function to create slightly different data to simulate real-time updates for Mistissini
 const getUpdatedData = (): MapDataType => {
   // Deep copy the initialData to avoid modifying it
   const data: MapDataType = JSON.parse(JSON.stringify(initialData));
@@ -462,8 +348,8 @@ const getUpdatedData = (): MapDataType => {
       
       // Keep the drone moving around the closest fire zone with more movement
       const zoneCoord = closestZone.geometry.coordinates[0][0];
-      const targetLat = zoneCoord[1] + (Math.random() - 0.5) * 0.05;
-      const targetLng = zoneCoord[0] + (Math.random() - 0.5) * 0.05;
+      const targetLat = zoneCoord[1] + (Math.random() - 0.5) * 0.02;
+      const targetLng = zoneCoord[0] + (Math.random() - 0.5) * 0.02;
       
       // Move drone toward target with some randomness
       const moveSpeed = 0.002 + Math.random() * 0.003;
@@ -473,9 +359,9 @@ const getUpdatedData = (): MapDataType => {
       responder.position.latitude += latDiff * moveSpeed;
       responder.position.longitude += lngDiff * moveSpeed;
     } else {
-      // Regular responders move as before
-      responder.position.latitude += (Math.random() - 0.5) * 0.01;
-      responder.position.longitude += (Math.random() - 0.5) * 0.01;
+      // Regular responders move as before, but smaller movements to stay in Mistissini area
+      responder.position.latitude += (Math.random() - 0.5) * 0.005;
+      responder.position.longitude += (Math.random() - 0.5) * 0.005;
     }
   });
 
@@ -484,9 +370,9 @@ const getUpdatedData = (): MapDataType => {
     const newResponderTypes: Array<'drone' | 'police' | 'fire' | 'medical'> = ['drone', 'police', 'fire', 'medical'];
     const newResponderType = newResponderTypes[Math.floor(Math.random() * newResponderTypes.length)];
     
-    // For forest fires, prioritize northern regions for new responders
-    const northernCities = [6, 7, 9, 10, 12, 15, 16]; // Indices of more northern cities
-    const location = ontarioCities[northernCities[Math.floor(Math.random() * northernCities.length)]];
+    // For forest fires, position new responders around Mistissini
+    const regionIndex = Math.floor(Math.random() * mistissiniRegions.length);
+    const location = mistissiniRegions[regionIndex];
     
     data.responders.push({
       id: `resp-${Math.floor(Math.random() * 1000)}`,
@@ -494,15 +380,15 @@ const getUpdatedData = (): MapDataType => {
       type: newResponderType,
       status: Math.random() > 0.5 ? 'active' : 'en-route',
       position: {
-        latitude: location.lat + (Math.random() - 0.5) * 0.05,
-        longitude: location.lng + (Math.random() - 0.5) * 0.05,
+        latitude: location.center.lat + (Math.random() - 0.5) * 0.02,
+        longitude: location.center.lng + (Math.random() - 0.5) * 0.02,
         locationName: location.name
       }
     });
   }
   
-  // Sometimes remove a responder (10% chance, if we have more than 8 responders)
-  if (Math.random() > 0.9 && data.responders.length > 8) {
+  // Sometimes remove a responder (10% chance, if we have more than 6 responders)
+  if (Math.random() > 0.9 && data.responders.length > 6) {
     const indexToRemove = Math.floor(Math.random() * data.responders.length);
     data.responders.splice(indexToRemove, 1);
   }
@@ -512,137 +398,78 @@ const getUpdatedData = (): MapDataType => {
     data.dangerZones.forEach(zone => {
       zone.geometry.coordinates[0].forEach((coord, index) => {
         if (index > 0 && index < zone.geometry.coordinates[0].length - 1) {
-          coord[0] += (Math.random() - 0.5) * 0.02;
-          coord[1] += (Math.random() - 0.5) * 0.02;
+          coord[0] += (Math.random() - 0.5) * 0.01;
+          coord[1] += (Math.random() - 0.5) * 0.01;
         }
       });
     });
   }
   
-  // Sometimes add a new forest fire zone (15% chance, max 8 zones)
-  if (Math.random() > 0.85 && data.dangerZones.length < 8) {
-    // Prefer northern cities for forest fires (more forested areas)
-    const northernCities = [6, 7, 9, 10, 12, 15, 16]; // Indices of more northern cities
-    const randomCityIndex = northernCities[Math.floor(Math.random() * northernCities.length)];
-    
-    const newZone = generateForestFireZone(randomCityIndex, `zone-${Math.floor(Math.random() * 1000)}`);
+  // Sometimes add a new forest fire zone (15% chance, max 6 zones)
+  if (Math.random() > 0.85 && data.dangerZones.length < 6) {
+    const regionIndex = Math.floor(Math.random() * mistissiniRegions.length);
+    const newZone = generateForestFireZone(regionIndex, `zone-${Math.floor(Math.random() * 1000)}`);
     data.dangerZones.push(newZone);
     
-    // Add an evacuation route for this new danger zone
-    data.evacuationRoutes.push(generateEvacuationRouteFromDangerZone(newZone, `route-${Math.floor(Math.random() * 1000)}`));
-    
     // Add an alert about the new forest fire
-    const forestRegion = newZone.forestRegion || 'Ontario Forest';
+    const forestRegion = newZone.forestRegion || 'Mistissini Forest';
     
     data.alerts.unshift({
       id: `alert-${Math.floor(Math.random() * 1000)}`,
       severity: 'critical',
       title: 'New Forest Fire',
-      message: `New forest fire detected in ${forestRegion} near ${ontarioCities[randomCityIndex].name}. Please avoid the area.`,
+      message: `New forest fire detected in ${forestRegion} near ${mistissiniRegions[regionIndex].name}. Please avoid the area.`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       location: forestRegion,
-      isNew: true
+      isNew: true,
+      visibility: 'all'
     });
-  }
-  
-  // Sometimes remove a danger zone (10% chance, if we have more than 4)
-  if (Math.random() > 0.9 && data.dangerZones.length > 4) {
-    const indexToRemove = Math.floor(Math.random() * data.dangerZones.length);
-    const removedZone = data.dangerZones[indexToRemove];
-    data.dangerZones.splice(indexToRemove, 1);
-    
-    // Also remove routes associated with this zone
-    // In real life, we would have a direct relationship between routes and zones
-    // But here we'll use a heuristic - remove routes that start near the removed zone
-    const routesToKeep = data.evacuationRoutes.filter(route => {
-      const startPointCity = ontarioCities.find(city => city.name === route.startPoint);
-      if (!startPointCity) return true; // Keep if we can't find the city
-      
-      // Calculate distance from route start to danger zone
-      const zoneCoord = removedZone.geometry.coordinates[0][0];
-      const distance = Math.sqrt(
-        Math.pow(startPointCity.lat - zoneCoord[1], 2) + 
-        Math.pow(startPointCity.lng - zoneCoord[0], 2)
-      );
-      
-      // If the route starts far from the removed zone, keep it
-      return distance > 0.2; // 0.2 degrees is roughly 22km
-    });
-    
-    // Replace routes with the filtered list
-    data.evacuationRoutes = routesToKeep;
   }
   
   // Update evacuation routes
   // 30% chance to update a random route
   if (Math.random() < 0.3 && data.evacuationRoutes.length > 0) {
     const routeIndex = Math.floor(Math.random() * data.evacuationRoutes.length);
-    data.evacuationRoutes[routeIndex] = updateEvacuationRoute(data.evacuationRoutes, routeIndex, data.dangerZones);
-  }
-  
-  // 10% chance to add a completely new route from a danger zone (if we have less than 12 routes)
-  if (Math.random() < 0.1 && data.evacuationRoutes.length < 12 && data.dangerZones.length > 0) {
-    const randomZoneIndex = Math.floor(Math.random() * data.dangerZones.length);
-    const newRoute = generateEvacuationRouteFromDangerZone(
-      data.dangerZones[randomZoneIndex],
-      `route-${Math.floor(Math.random() * 1000)}`
-    );
-    
-    data.evacuationRoutes.push(newRoute);
-    
-    // Add an alert about the new evacuation route
-    data.alerts.unshift({
-      id: `alert-${Math.floor(Math.random() * 1000)}`,
-      severity: 'info',
-      title: 'New Evacuation Route',
-      message: `New evacuation route established from ${newRoute.startPoint} to ${newRoute.endPoint} due to forest fire threat.`,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      location: `${newRoute.startPoint}-${newRoute.endPoint}`,
-      isNew: true
-    });
-  }
-  
-  // Sometimes remove a route (10% chance, if we have more than 4)
-  if (Math.random() > 0.9 && data.evacuationRoutes.length > 4) {
-    const indexToRemove = Math.floor(Math.random() * data.evacuationRoutes.length);
-    data.evacuationRoutes.splice(indexToRemove, 1);
+    data.evacuationRoutes[routeIndex] = updateEvacuationRoute(data.evacuationRoutes, routeIndex);
   }
   
   // Sometimes add a new forest fire related alert
   if (Math.random() > 0.7) {
     const alertSeverities: Array<'critical' | 'warning' | 'info'> = ['critical', 'warning', 'info'];
     const newSeverity = alertSeverities[Math.floor(Math.random() * alertSeverities.length)];
+    const visibilityOptions: Array<'public' | 'admin' | 'all'> = ['public', 'admin', 'all'];
+    const visibility = visibilityOptions[Math.floor(Math.random() * visibilityOptions.length)];
     
-    // Forest fire specific alert templates
+    // Forest fire specific alert templates for Mistissini
     const alertTemplates = {
       critical: {
         title: 'Critical Fire Alert',
         messages: [
-          'New forest fire spot detected in Northern Ontario. Immediate evacuation required.',
+          'New forest fire spot detected in Northern Mistissini. Immediate evacuation required.',
           'Fire spread accelerating due to changing wind patterns. Additional evacuations ordered.',
-          'Fire has jumped containment lines in Algonquin Park. Evacuation zone expanded.'
+          'Fire has jumped containment lines near Lake Mistassini. Evacuation zone expanded.'
         ]
       },
       warning: {
         title: 'Fire Warning',
         messages: [
-          'Wind direction changing in Boreal Forest region. Fire spread anticipated.',
-          'Smoke conditions worsening near Thunder Bay. Air quality alert issued.',
-          'Low visibility on Highway 11 due to forest fire smoke.'
+          'Wind direction changing in Mistissini Forest region. Fire spread anticipated.',
+          'Smoke conditions worsening near community center. Air quality alert issued.',
+          'Low visibility on access roads due to forest fire smoke.'
         ]
       },
       info: {
         title: 'Fire Update',
         messages: [
-          'New fire suppression team deployed to Temagami Forest region.',
-          'Water bomber aircraft now operating in Georgian Bay Forest area.',
-          'Weather forecast predicts rain in Northern Ontario, possibly aiding firefighting efforts.'
+          'New fire suppression team deployed to Mistissini Forest region.',
+          'Water bomber aircraft now operating in Lake Mistassini area.',
+          'Weather forecast predicts rain in Mistissini, possibly aiding firefighting efforts.'
         ]
       }
     };
     
     // Select a random forest region
-    const forestRegion = ontarioForestRegions[Math.floor(Math.random() * ontarioForestRegions.length)];
+    const forestRegion = mistissiniForestRegions[Math.floor(Math.random() * mistissiniForestRegions.length)];
     
     data.alerts.unshift({
       id: `alert-${Math.floor(Math.random() * 1000)}`,
@@ -651,31 +478,8 @@ const getUpdatedData = (): MapDataType => {
       message: alertTemplates[newSeverity].messages[Math.floor(Math.random() * alertTemplates[newSeverity].messages.length)],
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       location: forestRegion,
-      isNew: true
-    });
-  }
-  
-  // Sometimes add a new drone alert specifically (20% chance)
-  if (Math.random() > 0.8) {
-    const droneAlerts = [
-      "Drone surveillance detects fire spread in northeasterly direction. Evacuation area expanded.",
-      "Drone thermal imaging identifies new hotspot in Boreal Forest region.",
-      "Drone feed shows decreasing visibility due to smoke. Air operations may be limited.",
-      "Drone team reports fire containment improving on western perimeter.",
-      "Drone battery low, returning to base for recharge and maintenance."
-    ];
-    
-    const randomAlert = droneAlerts[Math.floor(Math.random() * droneAlerts.length)];
-    const forestRegion = ontarioForestRegions[Math.floor(Math.random() * ontarioForestRegions.length)];
-    
-    data.alerts.unshift({
-      id: `alert-${Math.floor(Math.random() * 1000)}`,
-      severity: Math.random() > 0.5 ? 'warning' : 'info',
-      title: 'Drone Report',
-      message: randomAlert,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      location: forestRegion,
-      isNew: true
+      isNew: true,
+      visibility: visibility
     });
   }
   

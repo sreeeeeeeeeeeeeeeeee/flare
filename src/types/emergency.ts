@@ -70,3 +70,12 @@ export type MapDataType = {
   alerts: AlertType[];
   videoFeeds: VideoFeedType[];
 };
+
+export type MistissiniRegion = {
+  center: {
+    lat: number;
+    lng: number;
+  };
+  name: string;
+  description?: string;
+};

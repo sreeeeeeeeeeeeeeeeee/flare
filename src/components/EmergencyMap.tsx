@@ -5,7 +5,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapDataType } from '@/types/emergency';
-import { Flame, TreePine } from 'lucide-react';
+import { Flame, TreePine, MapPin, Navigation } from 'lucide-react';
+import { mistissiniLocation } from '@/services/mistissiniData';
 
 // Fix Leaflet marker icon issue
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -29,15 +30,8 @@ function MapUpdater({ data }: { data: MapDataType }) {
   useEffect(() => {
     // Only set the initial view once when the component mounts
     if (!initialSetupDoneRef.current) {
-      // Center the map on Ontario, Canada if no danger zones
-      if (data.dangerZones.length === 0) {
-        map.setView([51.2538, -85.3232], 5); // Ontario, Canada coordinates
-      } else {
-        // If there are danger zones, center on the first one
-        const coords = data.dangerZones[0].geometry.coordinates[0][0];
-        map.setView([coords[1], coords[0]], 8);
-      }
-      
+      // Focus on Mistissini by default
+      map.setView([mistissiniLocation.center.lat, mistissiniLocation.center.lng], 11);
       initialSetupDoneRef.current = true;
     }
   }, [map, data]);
@@ -86,10 +80,28 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
     });
   };
 
+  // Create a location marker for Mistissini
+  const locationMarker = L.divIcon({
+    html: `
+      <div class="flex items-center justify-center">
+        <div class="text-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+        </div>
+      </div>
+      <div style="background-color: rgba(30, 30, 30, 0.8); color: white; font-size: 11px; padding: 2px 4px; border-radius: 2px; margin-top: -4px; white-space: nowrap; text-align: center;">Mistissini</div>
+    `,
+    className: 'location-marker',
+    iconSize: [40, 40],
+    iconAnchor: [20, 40]
+  });
+
   return (
     <MapContainer 
-      center={[51.2538, -85.3232]} // Ontario, Canada coordinates
-      zoom={5} 
+      center={[mistissiniLocation.center.lat, mistissiniLocation.center.lng]} 
+      zoom={11} 
       style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
       className="z-0"
       zoomControl={true}
@@ -101,6 +113,17 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      
+      {/* Mistissini Location Marker */}
+      <Marker 
+        position={[mistissiniLocation.center.lat, mistissiniLocation.center.lng]} 
+        icon={locationMarker}
+      >
+        <Popup>
+          <div className="text-sm font-medium">Mistissini</div>
+          <div className="text-xs mt-1">{mistissiniLocation.description}</div>
+        </Popup>
+      </Marker>
       
       {/* Danger zones - Forest Fires */}
       {data.dangerZones.map((zone) => (
@@ -119,10 +142,10 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
           <Popup>
             <div className="flex items-center gap-2 text-sm font-medium mb-1">
               <Flame className="h-4 w-4 text-danger" />
-              {zone.type === 'wildfire' ? 'Forest Fire' : 'WILDFIRE'}
+              {zone.type === 'wildfire' ? 'Forest Fire' : zone.type.toUpperCase()}
             </div>
             <div className="text-xs">Risk Level: {zone.riskLevel}</div>
-            <div className="text-xs">Forest Region: {zone.forestRegion || 'Ontario'}</div>
+            <div className="text-xs">Forest Region: {zone.forestRegion || 'Mistissini Area'}</div>
             <div className="text-xs flex items-center gap-1 mt-1">
               <TreePine className="h-3 w-3 text-emerald-600" />
               <span>Affected Forest Area</span>
