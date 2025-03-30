@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import VideoFeedControls from './VideoFeedControls';
 import VideoContent from './VideoContent';
 import FeedThumbnails from './FeedThumbnails';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 type VideoFeedProps = {
   currentFeed: VideoFeedType;
@@ -94,7 +95,7 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
       </div>
       
       <div className="relative flex-grow">
-        <div className="h-full w-full">
+        <AspectRatio ratio={16/9} className="h-full">
           <VideoContent 
             currentSrc={getCurrentFeedSrc()}
             showVideo={showVideo}
@@ -122,7 +123,7 @@ const VideoFeed = ({ currentFeed }: VideoFeedProps) => {
               )}
             </div>
           </div>
-        </div>
+        </AspectRatio>
       </div>
       
       <div className="p-2 border-t border-border">

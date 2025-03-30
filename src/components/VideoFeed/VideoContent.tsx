@@ -91,10 +91,10 @@ const VideoContent = ({
   
   if (isYouTubeURL(currentSrc)) {
     return (
-      <div className="w-full h-full flex items-start justify-start bg-black">
+      <div className="w-full h-full bg-black">
         <iframe
           src={getYouTubeEmbedURL(currentSrc)}
-          className="w-[90%] h-[90%]"
+          className="w-full h-full"
           frameBorder="0"
           allowFullScreen
           title="YouTube video player"
@@ -104,11 +104,11 @@ const VideoContent = ({
     );
   } else if (isVideoSource(currentSrc)) {
     return (
-      <div className="w-full h-full flex items-start justify-start bg-black">
+      <div className="w-full h-full bg-black">
         <video 
           ref={videoRef}
           src={currentSrc} 
-          className="w-[90%] h-[90%] object-contain"
+          className="w-full h-full object-contain"
           autoPlay
           muted
           loop
@@ -120,11 +120,11 @@ const VideoContent = ({
   }
   
   return (
-    <div className="w-full h-full flex items-start justify-start bg-black">
+    <div className="w-full h-full bg-black">
       <img 
         src={currentSrc} 
         alt="Video feed" 
-        className="w-[90%] h-[90%] object-contain"
+        className="w-full h-full object-contain"
       />
     </div>
   );
