@@ -1,4 +1,3 @@
-
 import { MapDataType, EvacuationRouteType, DangerZoneType } from '@/types/emergency';
 
 // Sample YouTube video - keeping only one video feed
@@ -253,10 +252,51 @@ const generateEvacuationRoutesFromDangerZones = (dangerZones: DangerZoneType[]):
   return routes;
 };
 
+// Create drone responders positioned near danger zones
+const generateDroneResponders = (dangerZones: DangerZoneType[]) => {
+  const drones = [];
+  
+  // Determine how many drones to create (4-5 as requested)
+  const droneCount = 4 + Math.floor(Math.random() * 2); // 4 or 5 drones
+  
+  // For each drone, position it near a danger zone
+  for (let i = 0; i < Math.min(droneCount, dangerZones.length); i++) {
+    // Get coordinates from the danger zone
+    const zoneCoords = dangerZones[i].geometry.coordinates[0][0];
+    
+    // Add slight offset to position the drone near but not exactly on the danger zone
+    const latOffset = (Math.random() - 0.5) * 0.05; // Random offset within ~5km
+    const lngOffset = (Math.random() - 0.5) * 0.05;
+    
+    // Find the nearest city for location naming
+    const nearestCityIndex = findNearestCityToDangerZone(dangerZones[i]);
+    const nearestCity = ontarioCities[nearestCityIndex];
+    
+    drones.push({
+      id: `drone-${i + 1}`,
+      name: `Forest Fire Drone ${i + 1}`,
+      type: 'drone' as const,
+      status: Math.random() > 0.3 ? 'active' as const : 'en-route' as const,
+      position: {
+        latitude: zoneCoords[1] + latOffset,
+        longitude: zoneCoords[0] + lngOffset,
+        locationName: `${nearestCity.name} Forest Region`
+      }
+    });
+  }
+  
+  return drones;
+};
+
 // Initial data state - updated with more forest fire zones and realistic evacuation routes
 const initialDangerZones = generateInitialForestFireZones(8); // 8 initial forest fire zones
+const initialDrones = generateDroneResponders(initialDangerZones);
+
 const initialData: MapDataType = {
   responders: [
+    // Include generated drones at the beginning of the responders array
+    ...initialDrones,
+    // Keep original responders but remove the single drone that was there before
     {
       id: 'resp-1',
       name: 'Fire Squad A',
@@ -266,17 +306,6 @@ const initialData: MapDataType = {
         latitude: 46.4917,
         longitude: -80.9930,
         locationName: 'Sudbury'
-      }
-    },
-    {
-      id: 'resp-2',
-      name: 'Drone 1',
-      type: 'drone',
-      status: 'active',
-      position: {
-        latitude: 48.3809,
-        longitude: -89.2477,
-        locationName: 'Thunder Bay'
       }
     },
     {
@@ -328,10 +357,10 @@ const initialData: MapDataType = {
     {
       id: 'alert-2',
       severity: 'warning',
-      title: 'Traffic Congestion',
-      message: 'Heavy traffic on Highway 401 due to evacuation. Seek alternative routes.',
+      title: 'Drone Deployment',
+      message: 'Surveillance drones deployed to monitor forest fire perimeters in Northern Ontario.',
       time: '13:30',
-      location: 'Highway 401',
+      location: 'Northern Ontario',
       isNew: true
     },
     {
@@ -412,10 +441,44 @@ const getUpdatedData = (): MapDataType => {
   
   // Update responder positions
   data.responders.forEach(responder => {
-    responder.position.latitude += (Math.random() - 0.5) * 0.01;
-    responder.position.longitude += (Math.random() - 0.5) * 0.01;
+    // For drone responders, keep them moving more actively around danger zones
+    if (responder.type === 'drone') {
+      // Find the nearest danger zone
+      let closestZone = data.dangerZones[0];
+      let minDistance = Number.MAX_VALUE;
+      
+      data.dangerZones.forEach(zone => {
+        const zoneCoord = zone.geometry.coordinates[0][0];
+        const distance = Math.sqrt(
+          Math.pow(responder.position.latitude - zoneCoord[1], 2) + 
+          Math.pow(responder.position.longitude - zoneCoord[0], 2)
+        );
+        
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestZone = zone;
+        }
+      });
+      
+      // Keep the drone moving around the closest fire zone with more movement
+      const zoneCoord = closestZone.geometry.coordinates[0][0];
+      const targetLat = zoneCoord[1] + (Math.random() - 0.5) * 0.05;
+      const targetLng = zoneCoord[0] + (Math.random() - 0.5) * 0.05;
+      
+      // Move drone toward target with some randomness
+      const moveSpeed = 0.002 + Math.random() * 0.003;
+      const latDiff = targetLat - responder.position.latitude;
+      const lngDiff = targetLng - responder.position.longitude;
+      
+      responder.position.latitude += latDiff * moveSpeed;
+      responder.position.longitude += lngDiff * moveSpeed;
+    } else {
+      // Regular responders move as before
+      responder.position.latitude += (Math.random() - 0.5) * 0.01;
+      responder.position.longitude += (Math.random() - 0.5) * 0.01;
+    }
   });
-  
+
   // Sometimes add a new responder (30% chance)
   if (Math.random() > 0.7) {
     const newResponderTypes: Array<'drone' | 'police' | 'fire' | 'medical'> = ['drone', 'police', 'fire', 'medical'];
@@ -438,8 +501,8 @@ const getUpdatedData = (): MapDataType => {
     });
   }
   
-  // Sometimes remove a responder (10% chance, if we have more than 3 responders)
-  if (Math.random() > 0.9 && data.responders.length > 3) {
+  // Sometimes remove a responder (10% chance, if we have more than 8 responders)
+  if (Math.random() > 0.9 && data.responders.length > 8) {
     const indexToRemove = Math.floor(Math.random() * data.responders.length);
     data.responders.splice(indexToRemove, 1);
   }
@@ -586,6 +649,30 @@ const getUpdatedData = (): MapDataType => {
       severity: newSeverity,
       title: alertTemplates[newSeverity].title,
       message: alertTemplates[newSeverity].messages[Math.floor(Math.random() * alertTemplates[newSeverity].messages.length)],
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      location: forestRegion,
+      isNew: true
+    });
+  }
+  
+  // Sometimes add a new drone alert specifically (20% chance)
+  if (Math.random() > 0.8) {
+    const droneAlerts = [
+      "Drone surveillance detects fire spread in northeasterly direction. Evacuation area expanded.",
+      "Drone thermal imaging identifies new hotspot in Boreal Forest region.",
+      "Drone feed shows decreasing visibility due to smoke. Air operations may be limited.",
+      "Drone team reports fire containment improving on western perimeter.",
+      "Drone battery low, returning to base for recharge and maintenance."
+    ];
+    
+    const randomAlert = droneAlerts[Math.floor(Math.random() * droneAlerts.length)];
+    const forestRegion = ontarioForestRegions[Math.floor(Math.random() * ontarioForestRegions.length)];
+    
+    data.alerts.unshift({
+      id: `alert-${Math.floor(Math.random() * 1000)}`,
+      severity: Math.random() > 0.5 ? 'warning' : 'info',
+      title: 'Drone Report',
+      message: randomAlert,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       location: forestRegion,
       isNew: true
