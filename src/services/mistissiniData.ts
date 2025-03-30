@@ -86,6 +86,88 @@ export const evacuationDestinations = [
   }
 ];
 
+// Actual streets in Mistissini
+export const mistissiniStreets = [
+  {
+    name: "Amisk Street",
+    description: "Main east-west road in central Mistissini",
+    path: [
+      [50.4209, -73.8731],
+      [50.4207, -73.8707],
+      [50.4205, -73.8682],
+      [50.4203, -73.8658],
+      [50.4201, -73.8635]
+    ]
+  },
+  {
+    name: "Wabushush Street",
+    description: "North-south road in western Mistissini",
+    path: [
+      [50.4235, -73.8712],
+      [50.4220, -73.8715],
+      [50.4205, -73.8717],
+      [50.4190, -73.8720]
+    ]
+  },
+  {
+    name: "Chief Isaiah Shecapio Road",
+    description: "Main entry road to Mistissini",
+    path: [
+      [50.4180, -73.8790],
+      [50.4190, -73.8760],
+      [50.4200, -73.8730],
+      [50.4210, -73.8700]
+    ]
+  },
+  {
+    name: "Mistissini Community Road",
+    description: "Road circling the community center",
+    path: [
+      [50.4232, -73.8675],
+      [50.4236, -73.8690],
+      [50.4232, -73.8705],
+      [50.4225, -73.8710],
+      [50.4218, -73.8705],
+      [50.4215, -73.8690],
+      [50.4218, -73.8675],
+      [50.4226, -73.8670],
+      [50.4232, -73.8675]
+    ]
+  },
+  {
+    name: "Lake Shore Road",
+    description: "Road along Lake Mistassini",
+    path: [
+      [50.4201, -73.8635],
+      [50.4195, -73.8620],
+      [50.4185, -73.8610],
+      [50.4175, -73.8605],
+      [50.4165, -73.8600]
+    ]
+  },
+  {
+    name: "Northern Access Road",
+    description: "Road to northern parts of Mistissini",
+    path: [
+      [50.4232, -73.8675],
+      [50.4250, -73.8670],
+      [50.4270, -73.8665],
+      [50.4290, -73.8660]
+    ]
+  },
+  {
+    name: "Route 167 to Chibougamau",
+    description: "Main highway connecting to Chibougamau",
+    path: [
+      [50.4210, -73.8700],
+      [50.4250, -73.8550],
+      [50.4300, -73.8400],
+      [50.4350, -73.8250],
+      [50.4400, -73.8100]
+    ]
+  }
+];
+
 // Main highways and roads in the Mistissini area
 export const mistissiniHighways = [
   {

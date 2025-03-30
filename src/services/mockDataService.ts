@@ -1,5 +1,5 @@
 import { MapDataType, EvacuationRouteType, DangerZoneType } from '@/types/emergency';
-import { mistissiniLocation, mistissiniRegions, mistissiniForestRegions, evacuationDestinations, mistissiniHighways } from './mistissiniData';
+import { mistissiniLocation, mistissiniRegions, mistissiniForestRegions, evacuationDestinations, mistissiniHighways, mistissiniStreets } from './mistissiniData';
 
 // Sample YouTube video - keeping only one video feed
 const droneVideo = 'https://youtu.be/uRFrHhBKAto';
@@ -11,7 +11,7 @@ const generateForestFireZone = (nearRegion: number, id: string): DangerZoneType 
   
   // Create a smaller irregular polygon around the region
   // Reduced radius to make the danger zones more focused
-  const radius = 0.01 + Math.random() * 0.015; // Smaller radius between 0.01 and 0.025 degrees
+  const radius = 0.005 + Math.random() * 0.01; // Even smaller radius between 0.005 and 0.015 degrees
   const sides = 5 + Math.floor(Math.random() * 3); // 5-7 sides for the polygon
   const coordinates = [];
   
@@ -54,23 +54,22 @@ const generateInitialForestFireZones = (count: number = 4): DangerZoneType[] => 
   return zones;
 };
 
-// Generate a realistic evacuation route following highways accurately
-const generateHighwayEvacuationRoute = (
-  highwayIndex: number, 
-  destinationName: string, 
+// Generate an evacuation route following an actual street in Mistissini
+const generateStreetEvacuationRoute = (
+  streetIndex: number,
+  destinationName: string,
   id: string
 ): EvacuationRouteType => {
-  const highway = mistissiniHighways[highwayIndex];
+  const street = mistissiniStreets[streetIndex];
   
-  // For accuracy, use the exact highway path without any modifications
-  // This ensures routes follow actual roads
-  const coordinates = highway.path.map(point => [point[1], point[0]]);
+  // Use the exact street path without modifications
+  const coordinates = street.path.map(point => [point[1], point[0]]);
   
-  // Determine transport methods based on the highway
+  // Determine transport methods
   const transportMethods: Array<'car' | 'foot' | 'emergency'> = ['car', 'emergency'];
   
-  // Add 'foot' only for shorter routes that are actually walkable
-  if (highway.name === "Lake Mistassini Shore Road" || coordinates.length < 6) {
+  // Add 'foot' for shorter streets that are walkable
+  if (coordinates.length < 6) {
     transportMethods.push('foot');
   }
   
@@ -90,18 +89,17 @@ const generateHighwayEvacuationRoute = (
     }
   }
   
-  // Calculate a rough estimate of travel time based on the number of points
-  // Assuming each segment takes about 3-7 minutes to travel
-  const estimatedTime = Math.max(10, Math.round(coordinates.length * (3 + Math.random() * 4)));
+  // Calculate estimated travel time based on street length
+  const estimatedTime = Math.max(5, Math.round(coordinates.length * 2));
   
   return {
     id,
-    startPoint: "Mistissini",
-    endPoint: destinationName,
+    startPoint: street.path[0] ? `${street.name} Start` : "Mistissini",
+    endPoint: destinationName || street.path[street.path.length-1] ? `${street.name} End` : "Destination",
     status: statusOptions[selectedStatusIndex],
     estimatedTime,
     transportMethods,
-    routeName: highway.name, // Add highway name to help organize in the UI
+    routeName: street.name,
     geometry: {
       type: 'LineString',
       coordinates
@@ -109,21 +107,44 @@ const generateHighwayEvacuationRoute = (
   };
 };
 
-// Generate evacuation routes precisely following the highway paths
+// Generate evacuation routes following streets in Mistissini
 const generateEvacuationRoutes = (): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
   
-  // Use each highway as defined in mistissiniData.ts
-  mistissiniHighways.forEach((highway, index) => {
-    // Generate a route that strictly follows this highway
-    routes.push(generateHighwayEvacuationRoute(
+  // Use each street in Mistissini for local evacuation routes
+  mistissiniStreets.forEach((street, index) => {
+    // Generate a route that follows this street exactly
+    routes.push(generateStreetEvacuationRoute(
       index,
-      highway.description.includes("to ") 
-        ? highway.description.split("to ")[1].trim() 
-        : highway.name,
-      `route-${index + 1}`
+      street.description.includes("to ") 
+        ? street.description.split("to ")[1].trim() 
+        : `${street.name} Destination`,
+      `route-street-${index + 1}`
     ));
   });
+  
+  // Also include a couple of highway evacuation routes for long distance evacuation
+  // Use first two highways from mistissiniHighways
+  for (let i = 0; i < Math.min(2, mistissiniHighways.length); i++) {
+    const highway = mistissiniHighways[i];
+    const coordinates = highway.path.map(point => [point[1], point[0]]);
+    
+    routes.push({
+      id: `route-highway-${i + 1}`,
+      startPoint: "Mistissini",
+      endPoint: highway.description.includes("to ") 
+        ? highway.description.split("to ")[1].trim() 
+        : highway.name,
+      status: "open", // Make highways open for evacuation
+      estimatedTime: Math.max(30, coordinates.length * 5),
+      transportMethods: ['car', 'emergency'],
+      routeName: highway.name,
+      geometry: {
+        type: 'LineString',
+        coordinates
+      }
+    });
+  }
   
   return routes;
 };
@@ -176,8 +197,8 @@ const initialData: MapDataType = {
       type: 'fire',
       status: 'active',
       position: {
-        latitude: mistissiniLocation.center.lat + 0.01,
-        longitude: mistissiniLocation.center.lng - 0.01,
+        latitude: mistissiniLocation.center.lat + 0.005,
+        longitude: mistissiniLocation.center.lng - 0.005,
         locationName: 'Mistissini'
       }
     },
@@ -187,8 +208,8 @@ const initialData: MapDataType = {
       type: 'medical',
       status: 'en-route',
       position: {
-        latitude: mistissiniLocation.center.lat - 0.015,
-        longitude: mistissiniLocation.center.lng + 0.02,
+        latitude: mistissiniLocation.center.lat - 0.007,
+        longitude: mistissiniLocation.center.lng + 0.01,
         locationName: 'Mistissini Community Center'
       }
     },
@@ -209,8 +230,8 @@ const initialData: MapDataType = {
       type: 'police',
       status: 'active',
       position: {
-        latitude: mistissiniLocation.center.lat + 0.025,
-        longitude: mistissiniLocation.center.lng + 0.01,
+        latitude: mistissiniLocation.center.lat + 0.01,
+        longitude: mistissiniLocation.center.lng + 0.005,
         locationName: 'Northern Mistissini'
       }
     },
@@ -222,7 +243,7 @@ const initialData: MapDataType = {
       id: 'alert-1',
       severity: 'critical',
       title: 'Forest Fire Alert',
-      message: 'Active forest fire detected in Mistissini Boreal Forest. Immediate evacuation required for northern sectors.',
+      message: 'Active forest fire detected near Amisk Street. Immediate evacuation required via Wabushush Street.',
       time: '13:45',
       location: 'Northern Mistissini',
       isNew: false,
@@ -232,7 +253,7 @@ const initialData: MapDataType = {
       id: 'alert-2',
       severity: 'warning',
       title: 'Drone Deployment',
-      message: 'Surveillance drones deployed to monitor forest fire perimeters around Lake Mistassini.',
+      message: 'Surveillance drones deployed to monitor forest fire perimeters around Mistissini.',
       time: '13:30',
       location: 'Mistissini Region',
       isNew: true,
@@ -242,7 +263,7 @@ const initialData: MapDataType = {
       id: 'alert-3',
       severity: 'critical',
       title: 'New Forest Fire',
-      message: 'New forest fire identified in Lake Mistassini Shoreline Forest. Please avoid the eastern shore area.',
+      message: 'New forest fire identified near Chief Isaiah Shecapio Road. Route 167 remains open for evacuation.',
       time: '14:05',
       location: 'Eastern Shore',
       isNew: true,
@@ -252,9 +273,9 @@ const initialData: MapDataType = {
       id: 'alert-4', 
       severity: 'warning',
       title: 'Smoke Conditions',
-      message: 'Poor visibility due to smoke from forest fires. Use caution when driving in the Mistissini area.',
+      message: 'Poor visibility on Wabushush Street due to smoke. Use Lake Shore Road as alternative.',
       time: '18:30',
-      location: 'Mistissini Region',
+      location: 'Mistissini',
       isNew: false,
       visibility: 'public'
     }
@@ -401,43 +422,43 @@ const getUpdatedData = (): MapDataType => {
     data.evacuationRoutes[routeIndex] = updateEvacuationRouteStatus(data.evacuationRoutes, routeIndex);
   }
   
-  // Sometimes add a new forest fire related alert
+  // Sometimes add a new street-specific alert
   if (Math.random() > 0.7) {
     const alertSeverities: Array<'critical' | 'warning' | 'info'> = ['critical', 'warning', 'info'];
     const newSeverity = alertSeverities[Math.floor(Math.random() * alertSeverities.length)];
     const visibilityOptions: Array<'public' | 'admin' | 'all'> = ['public', 'admin', 'all'];
     const visibility = visibilityOptions[Math.floor(Math.random() * visibilityOptions.length)];
     
-    // Forest fire specific alert templates for Mistissini
+    // Get a random street name
+    const randomStreet = mistissiniStreets[Math.floor(Math.random() * mistissiniStreets.length)];
+    
+    // Street-specific alert templates
     const alertTemplates = {
       critical: {
-        title: 'Critical Fire Alert',
+        title: 'Street Closure Alert',
         messages: [
-          'New forest fire spot detected in Northern Mistissini. Immediate evacuation required.',
-          'Fire spread accelerating due to changing wind patterns. Additional evacuations ordered.',
-          'Fire has jumped containment lines near Lake Mistassini. Evacuation zone expanded.'
+          `${randomStreet.name} is now closed due to fire. Use alternate routes.`,
+          `Evacuation required immediately from ${randomStreet.name} area.`,
+          `Fire has reached ${randomStreet.name}. All residents must evacuate now.`
         ]
       },
       warning: {
-        title: 'Fire Warning',
+        title: 'Street Congestion Warning',
         messages: [
-          'Wind direction changing in Mistissini Forest region. Fire spread anticipated.',
-          'Smoke conditions worsening near community center. Air quality alert issued.',
-          'Low visibility on access roads due to forest fire smoke.'
+          `Heavy traffic on ${randomStreet.name}. Expect delays during evacuation.`,
+          `Smoke reducing visibility on ${randomStreet.name}. Proceed with caution.`,
+          `${randomStreet.name} experiencing congestion. Consider alternative routes.`
         ]
       },
       info: {
-        title: 'Fire Update',
+        title: 'Street Update',
         messages: [
-          'New fire suppression team deployed to Mistissini Forest region.',
-          'Water bomber aircraft now operating in Lake Mistassini area.',
-          'Weather forecast predicts rain in Mistissini, possibly aiding firefighting efforts.'
+          `${randomStreet.name} remains open for evacuation.`,
+          `Emergency services stationed along ${randomStreet.name} to assist evacuation.`,
+          `${randomStreet.name} has been designated as priority evacuation route.`
         ]
       }
     };
-    
-    // Select a random forest region
-    const forestRegion = mistissiniForestRegions[Math.floor(Math.random() * mistissiniForestRegions.length)];
     
     data.alerts.unshift({
       id: `alert-${Math.floor(Math.random() * 1000)}`,
@@ -445,7 +466,7 @@ const getUpdatedData = (): MapDataType => {
       title: alertTemplates[newSeverity].title,
       message: alertTemplates[newSeverity].messages[Math.floor(Math.random() * alertTemplates[newSeverity].messages.length)],
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      location: forestRegion,
+      location: 'Mistissini',
       isNew: true,
       visibility: visibility
     });

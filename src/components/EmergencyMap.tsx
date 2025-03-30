@@ -30,8 +30,8 @@ function MapUpdater({ data }: { data: MapDataType }) {
   useEffect(() => {
     // Only set the initial view once when the component mounts
     if (!initialSetupDoneRef.current) {
-      // Focus on Mistissini by default
-      map.setView([mistissiniLocation.center.lat, mistissiniLocation.center.lng], 11);
+      // Focus on Mistissini by default with a closer zoom level to see streets
+      map.setView([mistissiniLocation.center.lat, mistissiniLocation.center.lng], 14);
       initialSetupDoneRef.current = true;
     }
   }, [map, data]);
@@ -101,7 +101,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
   return (
     <MapContainer 
       center={[mistissiniLocation.center.lat, mistissiniLocation.center.lng]} 
-      zoom={11} 
+      zoom={14} 
       style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
       className="z-0"
       zoomControl={true}
@@ -166,7 +166,8 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
           }}
         >
           <Popup>
-            <div className="text-sm font-medium">Route: {route.startPoint} to {route.endPoint}</div>
+            <div className="text-sm font-medium">{route.routeName}</div>
+            <div className="text-xs">From: {route.startPoint} to {route.endPoint}</div>
             <div className="text-xs">Status: {route.status}</div>
             <div className="text-xs">Estimated Time: {route.estimatedTime} min</div>
             <div className="text-xs">Transport: {route.transportMethods.join(', ')}</div>
