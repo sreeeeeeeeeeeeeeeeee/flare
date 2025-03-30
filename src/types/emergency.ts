@@ -45,6 +45,7 @@ export type AlertType = {
   time: string;
   location: string;
   isNew: boolean;
+  visibility?: 'public' | 'admin' | 'all';
 };
 
 export type VideoFeedType = {
