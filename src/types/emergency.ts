@@ -31,6 +31,7 @@ export type EvacuationRouteType = {
   status: 'open' | 'congested' | 'closed';
   estimatedTime: number;
   transportMethods: Array<'car' | 'foot' | 'emergency'>;
+  routeName?: string; // Added to identify the highway/route name
   geometry: {
     type: 'LineString';
     coordinates: number[][];

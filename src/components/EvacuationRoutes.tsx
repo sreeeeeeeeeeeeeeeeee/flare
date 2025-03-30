@@ -13,6 +13,16 @@ const EvacuationRoutes = ({ routes }: EvacuationRoutesProps) => {
     return 0;
   });
 
+  // Group the routes by highway name for better organization
+  const groupedRoutes = sortedRoutes.reduce((acc, route) => {
+    const key = route.routeName || 'Other Routes';
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(route);
+    return acc;
+  }, {} as Record<string, EvacuationRouteType[]>);
+
   return (
     <div className="border border-border rounded-lg bg-card flex flex-col overflow-hidden h-full">
       <div className="p-3 border-b border-border flex justify-between items-center">
@@ -28,56 +38,64 @@ const EvacuationRoutes = ({ routes }: EvacuationRoutesProps) => {
             No evacuation routes available
           </div>
         ) : (
-          sortedRoutes.map(route => (
-            <div 
-              key={route.id}
-              className={`p-3 rounded border text-sm ${
-                route.status === 'open' 
-                  ? 'bg-safe/10 border-safe' 
-                  : route.status === 'congested' 
-                    ? 'bg-warning/10 border-warning' 
-                    : 'bg-danger/10 border-danger'
-              }`}
-            >
-              <div className="flex items-start">
-                <div className="flex-grow">
-                  <div className="font-medium flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    <span>{route.startPoint}</span>
-                    <ArrowRight className="h-3 w-3" />
-                    <span>{route.endPoint}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className={`text-xs px-2 py-0.5 rounded-full ${
-                      route.status === 'open' 
-                        ? 'bg-safe text-white' 
-                        : route.status === 'congested' 
-                          ? 'bg-warning text-white' 
-                          : 'bg-danger text-white'
-                    }`}>
-                      {route.status.toUpperCase()}
+          Object.entries(groupedRoutes).map(([routeName, routes]) => (
+            <div key={routeName} className="space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground px-1">
+                {routeName}
+              </div>
+              
+              {routes.map(route => (
+                <div 
+                  key={route.id}
+                  className={`p-3 rounded border text-sm ${
+                    route.status === 'open' 
+                      ? 'bg-safe/10 border-safe' 
+                      : route.status === 'congested' 
+                        ? 'bg-warning/10 border-warning' 
+                        : 'bg-danger/10 border-danger'
+                  }`}
+                >
+                  <div className="flex items-start">
+                    <div className="flex-grow">
+                      <div className="font-medium flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        <span>{route.startPoint}</span>
+                        <ArrowRight className="h-3 w-3" />
+                        <span>{route.endPoint}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className={`text-xs px-2 py-0.5 rounded-full ${
+                          route.status === 'open' 
+                            ? 'bg-safe text-white' 
+                            : route.status === 'congested' 
+                              ? 'bg-warning text-white' 
+                              : 'bg-danger text-white'
+                        }`}>
+                          {route.status.toUpperCase()}
+                        </div>
+                        
+                        <div className="text-xs text-muted-foreground">
+                          {route.estimatedTime} min
+                        </div>
+                      </div>
+                      
+                      <div className="mt-2 flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground mr-1">Transport:</span>
+                        {route.transportMethods.includes('car') && (
+                          <Car className="h-3 w-3 text-muted-foreground" />
+                        )}
+                        {route.transportMethods.includes('emergency') && (
+                          <Truck className="h-3 w-3 text-muted-foreground" />
+                        )}
+                        {route.transportMethods.includes('foot') && (
+                          <PersonStanding className="h-3 w-3 text-muted-foreground" />
+                        )}
+                      </div>
                     </div>
-                    
-                    <div className="text-xs text-muted-foreground">
-                      {route.estimatedTime} min
-                    </div>
-                  </div>
-                  
-                  <div className="mt-2 flex items-center gap-1">
-                    <span className="text-xs text-muted-foreground mr-1">Transport:</span>
-                    {route.transportMethods.includes('car') && (
-                      <Car className="h-3 w-3 text-muted-foreground" />
-                    )}
-                    {route.transportMethods.includes('emergency') && (
-                      <Truck className="h-3 w-3 text-muted-foreground" />
-                    )}
-                    {route.transportMethods.includes('foot') && (
-                      <PersonStanding className="h-3 w-3 text-muted-foreground" />
-                    )}
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
           ))
         )}

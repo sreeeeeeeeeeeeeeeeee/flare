@@ -4,13 +4,14 @@ import { mistissiniLocation, mistissiniRegions, mistissiniForestRegions, evacuat
 // Sample YouTube video - keeping only one video feed
 const droneVideo = 'https://youtu.be/uRFrHhBKAto';
 
-// Generate a realistic forest fire zone around Mistissini
+// Generate a smaller forest fire zone around Mistissini
 const generateForestFireZone = (nearRegion: number, id: string): DangerZoneType => {
   const region = mistissiniRegions[nearRegion];
   const riskLevels: Array<'high' | 'medium' | 'low'> = ['high', 'medium', 'low'];
   
-  // Create an irregular polygon around the region
-  const radius = 0.02 + Math.random() * 0.04; // Random radius between 0.02 and 0.06 degrees
+  // Create a smaller irregular polygon around the region
+  // Reduced radius to make the danger zones more focused
+  const radius = 0.01 + Math.random() * 0.015; // Smaller radius between 0.01 and 0.025 degrees
   const sides = 5 + Math.floor(Math.random() * 3); // 5-7 sides for the polygon
   const coordinates = [];
   
@@ -53,7 +54,7 @@ const generateInitialForestFireZones = (count: number = 4): DangerZoneType[] => 
   return zones;
 };
 
-// Generate a realistic evacuation route following highways
+// Generate a realistic evacuation route following highways accurately
 const generateHighwayEvacuationRoute = (
   highwayIndex: number, 
   destinationName: string, 
@@ -61,13 +62,14 @@ const generateHighwayEvacuationRoute = (
 ): EvacuationRouteType => {
   const highway = mistissiniHighways[highwayIndex];
   
-  // Convert the highway path to the expected format for the route geometry
+  // For accuracy, use the exact highway path without any modifications
+  // This ensures routes follow actual roads
   const coordinates = highway.path.map(point => [point[1], point[0]]);
   
   // Determine transport methods based on the highway
   const transportMethods: Array<'car' | 'foot' | 'emergency'> = ['car', 'emergency'];
   
-  // Add 'foot' for shorter routes or if it's the Lake Shore route
+  // Add 'foot' only for shorter routes that are actually walkable
   if (highway.name === "Lake Mistassini Shore Road" || coordinates.length < 6) {
     transportMethods.push('foot');
   }
@@ -99,6 +101,7 @@ const generateHighwayEvacuationRoute = (
     status: statusOptions[selectedStatusIndex],
     estimatedTime,
     transportMethods,
+    routeName: highway.name, // Add highway name to help organize in the UI
     geometry: {
       type: 'LineString',
       coordinates
@@ -106,24 +109,21 @@ const generateHighwayEvacuationRoute = (
   };
 };
 
-// Generate evacuation routes based on actual highways
+// Generate evacuation routes precisely following the highway paths
 const generateEvacuationRoutes = (): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
   
-  // Route 167 to Chibougamau
-  routes.push(generateHighwayEvacuationRoute(0, "Chibougamau", "route-1"));
-  
-  // Route du Nord
-  routes.push(generateHighwayEvacuationRoute(1, "Route du Nord", "route-2"));
-  
-  // Oujé-Bougoumou Road
-  routes.push(generateHighwayEvacuationRoute(2, "Oujé-Bougoumou", "route-3"));
-  
-  // Waswanipi Route
-  routes.push(generateHighwayEvacuationRoute(3, "Waswanipi", "route-4"));
-  
-  // Lake Shore Road
-  routes.push(generateHighwayEvacuationRoute(4, "Lake Shore", "route-5"));
+  // Use each highway as defined in mistissiniData.ts
+  mistissiniHighways.forEach((highway, index) => {
+    // Generate a route that strictly follows this highway
+    routes.push(generateHighwayEvacuationRoute(
+      index,
+      highway.description.includes("to ") 
+        ? highway.description.split("to ")[1].trim() 
+        : highway.name,
+      `route-${index + 1}`
+    ));
+  });
   
   return routes;
 };
@@ -160,7 +160,7 @@ const generateDroneResponders = (dangerZones: DangerZoneType[]) => {
   return drones;
 };
 
-// Generate initial danger zones focused on Mistissini
+// Generate initial danger zones focused on Mistissini - now with smaller zones
 const initialDangerZones = generateInitialForestFireZones(4);
 const initialDrones = generateDroneResponders(initialDangerZones);
 
