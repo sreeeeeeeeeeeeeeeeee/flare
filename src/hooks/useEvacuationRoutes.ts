@@ -41,6 +41,7 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
     
     const updateInterval = setInterval(() => {
       if (isMountedRef.current) {
+        // Update all routes with consistent status changes
         setComputedRoutes(prevRoutes => 
           prevRoutes.map(route => {
             // Ensure Lake Shore to Eastern Mistissini route has consistent status
@@ -60,6 +61,8 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
             };
           })
         );
+        
+        console.log("Updated route statuses", new Date().toLocaleTimeString());
       }
     }, 120000); // 120000 ms = 2 minutes
     
