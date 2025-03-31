@@ -57,50 +57,79 @@ function EvacuationRoutes({ routes }: { routes: any[] }) {
   const [computedRoutes, setComputedRoutes] = useState<RouteCoordinates[]>([]);
 
   const fetchRoute = async (startLat: number, startLng: number, endLat: number, endLng: number) => {
-    const url = `https://graphhopper.com/api/1/route?point=${startLat},${startLng}&point=${endLat},${endLng}&vehicle=car&locale=en&key=${GRAPH_HOPPER_API_KEY}&points_encoded=false`;
-
     try {
+      const url = `https://graphhopper.com/api/1/route?point=${startLat},${startLng}&point=${endLat},${endLng}&vehicle=car&locale=en&key=${GRAPH_HOPPER_API_KEY}&points_encoded=false`;
+      
       const response = await fetch(url);
       const data = await response.json();
-      return data.paths[0]?.points.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
+      
+      if (data.paths && data.paths[0] && data.paths[0].points && data.paths[0].points.coordinates) {
+        return data.paths[0].points.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
+      } else {
+        console.error("Invalid response structure from GraphHopper API:", data);
+        // Return a direct line between start and end as fallback
+        return [[startLat, startLng], [endLat, endLng]];
+      }
     } catch (error) {
       console.error("Error fetching route:", error);
-      return null;
+      // Return a direct line between start and end as fallback
+      return [[startLat, startLng], [endLat, endLng]];
     }
   };
 
   useEffect(() => {
-    // For demo purposes, convert Mistissini streets to coordinates
-    // In a real app, you would have actual lat/lng for start and end points
+    // For demo purposes, use the actual route data without calculating new routes
+    // This ensures the app continues to work even when API calls fail
     const getRoutes = async () => {
-      // Convert data from our format to API-compatible format
+      // Process each route in the data
       const newRoutes = await Promise.all(
         routes.map(async (route) => {
-          // Using Mistissini locations as start/end for demo
-          // In a real app, these would come from your data source
-          const startLat = mistissiniLocation.center.lat - 0.01 + Math.random() * 0.005;
-          const startLng = mistissiniLocation.center.lng - 0.01 + Math.random() * 0.005;
-          const endLat = mistissiniLocation.center.lat - 0.005 + Math.random() * 0.01;
-          const endLng = mistissiniLocation.center.lng - 0.005 + Math.random() * 0.01;
-          
-          // Fetch the actual route from the API
-          const path = await fetchRoute(startLat, startLng, endLat, endLng);
-          
-          return { 
-            id: route.id, 
-            path, 
-            status: route.status,
-            routeName: route.routeName,
-            startPoint: route.startPoint,
-            endPoint: route.endPoint,
-            estimatedTime: route.estimatedTime,
-            transportMethods: route.transportMethods
-          };
+          try {
+            // Use predefined streets as fallback when API fails
+            let path: [number, number][] = [];
+            
+            // Find the matching street or highway for this route
+            const streetRoute = mistissiniStreets.find(street => street.name === route.routeName);
+            const highwayRoute = mistissiniHighways.find(highway => highway.name === route.routeName);
+            
+            if (streetRoute) {
+              path = streetRoute.path as [number, number][];
+            } else if (highwayRoute) {
+              path = highwayRoute.path as [number, number][];
+            } else {
+              // If no matching street, use the geometry directly from the route data
+              if (route.geometry && route.geometry.coordinates) {
+                path = route.geometry.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
+              } else {
+                // As last resort, generate random points near Mistissini
+                const startLat = mistissiniLocation.center.lat - 0.01 + Math.random() * 0.005;
+                const startLng = mistissiniLocation.center.lng - 0.01 + Math.random() * 0.005;
+                const endLat = mistissiniLocation.center.lat - 0.005 + Math.random() * 0.01;
+                const endLng = mistissiniLocation.center.lng - 0.005 + Math.random() * 0.01;
+                
+                path = await fetchRoute(startLat, startLng, endLat, endLng) || [[startLat, startLng], [endLat, endLng]];
+              }
+            }
+            
+            return { 
+              id: route.id, 
+              path, 
+              status: route.status,
+              routeName: route.routeName,
+              startPoint: route.startPoint,
+              endPoint: route.endPoint,
+              estimatedTime: route.estimatedTime,
+              transportMethods: route.transportMethods
+            };
+          } catch (err) {
+            console.error("Error processing route:", err);
+            return null;
+          }
         })
       );
       
-      // Filter out any failed requests and store in state
-      setComputedRoutes(newRoutes.filter((r) => r.path));
+      // Filter out any failed routes and set in state
+      setComputedRoutes(newRoutes.filter((r): r is RouteCoordinates => r !== null));
     };
 
     getRoutes();
