@@ -163,7 +163,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
         </Polyline>
       ))}
       
-      {/* Highlight the street evacuation routes */}
+      {/* Highlight the street evacuation routes that follow existing streets exactly */}
       {data.evacuationRoutes.map((route) => {
         // Find the matching street or highway for this route
         let path;
@@ -179,11 +179,16 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
           if (matchingHighway) {
             path = matchingHighway.path;
             isHighway = true;
+          } else {
+            // If we don't have a matching street or highway, but we have geometry data
+            // we can use that directly - however this should be rare since we want routes
+            // to follow streets exactly
+            path = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
           }
         }
         
         // Skip if we don't have a path for this route
-        if (!path) return null;
+        if (!path || path.length === 0) return null;
         
         return (
           <Polyline

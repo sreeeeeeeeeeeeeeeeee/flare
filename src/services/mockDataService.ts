@@ -54,17 +54,54 @@ const generateInitialForestFireZones = (count: number = 3): DangerZoneType[] => 
   return zones;
 };
 
-// Generate evacuation routes that follow actual Mistissini streets
+// Generate evacuation routes that follow actual Mistissini streets exactly
 const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
   
-  // Select specific streets to use as evacuation routes
+  // Main evacuation streets - ordered by priority
   const streetsToUse = [
     "Main Street",
     "Saint John Street", 
     "Lakeshore Drive",
     "Northern Boulevard",
-    "Southern Avenue"
+    "Community Center Road",
+    "Southern Avenue",
+    "Western Route",
+    "Cree Cultural Way"
+  ];
+  
+  // Paired streets that form complete evacuation routes (connect start to end)
+  const combinedRoutes = [
+    {
+      name: "Northern Evacuation Route",
+      streets: ["Northern Boulevard", "Main Street"],
+      startPoint: "Northern Forest Area",
+      endPoint: "Eastern Mistissini"
+    },
+    {
+      name: "Central Evacuation Route",
+      streets: ["Saint John Street", "Main Street"],
+      startPoint: "Southern Mistissini",
+      endPoint: "Eastern Mistissini"
+    },
+    {
+      name: "Lake Shore Evacuation",
+      streets: ["Lakeshore Drive", "Main Street"],
+      startPoint: "Eastern Shore",
+      endPoint: "Central Mistissini"
+    },
+    {
+      name: "Southern Escape Route",
+      streets: ["Southern Avenue", "Western Route"],
+      startPoint: "Southern Residential Area",
+      endPoint: "Western Exit"
+    },
+    {
+      name: "Community Center Access",
+      streets: ["Community Center Road", "Saint John Street"],
+      startPoint: "Community Center",
+      endPoint: "Central Mistissini"
+    }
   ];
   
   // Create evacuation routes for each selected street
@@ -90,6 +127,15 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
       } else if (street.name === "Southern Avenue") {
         startPoint = "Southern Residential Area";
         endPoint = "Central Mistissini";
+      } else if (street.name === "Community Center Road") {
+        startPoint = "Community Center";
+        endPoint = "Main Street";
+      } else if (street.name === "Western Route") {
+        startPoint = "Central Mistissini";
+        endPoint = "Western Exit";
+      } else if (street.name === "Cree Cultural Way") {
+        startPoint = "Cultural Center";
+        endPoint = "Western Area";
       } else {
         startPoint = `${street.name} Start`;
         endPoint = `${street.name} End`;
@@ -109,6 +155,28 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
         }
       });
     }
+  });
+  
+  // Add combined routes that follow multiple streets
+  combinedRoutes.forEach((route, index) => {
+    const status = Math.random() > 0.7 ? "congested" : "open";
+    const estimatedTime = 5 + Math.floor(Math.random() * 15); // 5-20 minutes
+    
+    routes.push({
+      id: `route-combined-${index + 1}`,
+      startPoint: route.startPoint,
+      endPoint: route.endPoint,
+      status,
+      estimatedTime,
+      transportMethods: ['car', 'emergency', 'foot'],
+      routeName: route.name,
+      // The geometry is based on the combined route streets
+      // But for rendering we'll use the matching street paths
+      geometry: {
+        type: 'LineString',
+        coordinates: [] // Empty as we'll use street.path for rendering instead
+      }
+    });
   });
   
   return routes;
