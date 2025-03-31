@@ -7,7 +7,6 @@ import {
   fetchSafeRoute, 
   calculateDistance 
 } from '@/utils/routeCalculationUtils';
-import { getRandomStatus } from '@/utils/mapUtils';
 
 export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
   const [computedRoutes, setComputedRoutes] = useState<Route[]>([]);
@@ -35,58 +34,7 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
     }
   }, [routes]);
 
-  // Add automatic status updates every 2 minutes
-  useEffect(() => {
-    if (computedRoutes.length === 0) return;
-    
-    const updateInterval = setInterval(() => {
-      if (isMountedRef.current) {
-        // Update all routes with consistent status changes
-        setComputedRoutes(prevRoutes => 
-          prevRoutes.map(route => {
-            // Ensure Lake Shore to Eastern Mistissini route has consistent status
-            if (route.start === "Lake Shore" && route.end === "Eastern Mistissini") {
-              return {
-                ...route,
-                status: "open", // Always keep this specific route open
-                updatedAt: new Date()
-              };
-            }
-            
-            // Make the first danger zone route consistently congested
-            if (route.id.includes("evacuation-1") || 
-                (route.start === "Danger Zone 1" && route.end === "Community Center")) {
-              return {
-                ...route,
-                status: "congested", // Always keep this specific route congested
-                updatedAt: new Date()
-              };
-            }
-            
-            // Ensure Chibougamau route is always open
-            if (route.end === "Chibougamau") {
-              return {
-                ...route,
-                status: "open", // Always keep this specific route open
-                updatedAt: new Date()
-              };
-            }
-            
-            // For other routes, randomly update status
-            return {
-              ...route,
-              status: getRandomStatus(),
-              updatedAt: new Date()
-            };
-          })
-        );
-        
-        console.log("Updated route statuses", new Date().toLocaleTimeString());
-      }
-    }, 120000); // 120000 ms = 2 minutes
-    
-    return () => clearInterval(updateInterval);
-  }, [computedRoutes]);
+  // Removed auto-updates since we want static route statuses
 
   const calculateRoutes = useCallback(async () => {
     if (isProcessingRef.current) return;
@@ -116,7 +64,7 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
           const enhancedRoute: Route = {
             id: route.id,
             path: path,
-            status: route.status,
+            status: route.status, // Preserve the original status
             start: route.startPoint,
             end: route.endPoint,
             updatedAt: new Date()

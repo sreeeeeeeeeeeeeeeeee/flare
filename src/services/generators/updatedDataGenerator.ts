@@ -1,8 +1,6 @@
-
 import { MapDataType, ResponderType } from '@/types/emergency';
-import { mistissiniRegions } from '../mistissini'; // Updated import path
+import { mistissiniRegions } from '../mistissini';
 import { updateResponderPositions } from './responderGenerator';
-import { updateEvacuationRouteStatus } from './evacuationRouteGenerator';
 import { generateNewAlert, updateAlerts } from './alertGenerator';
 
 // Function to create slightly different data to simulate real-time updates for Mistissini
@@ -24,30 +22,7 @@ export const generateUpdatedData = (initialData: MapDataType): MapDataType => {
     data.responders.splice(indexToRemove, 1);
   }
   
-  // Make route updates extremely rare (only 2% chance)
-  if (Math.random() < 0.02 && data.evacuationRoutes.length > 0) {
-    const routeIndex = Math.floor(Math.random() * data.evacuationRoutes.length);
-    data.evacuationRoutes[routeIndex] = updateEvacuationRouteStatus(data.evacuationRoutes, routeIndex);
-  }
-  
-  // Ensure the danger zone 1 evacuation route is always congested
-  const dangerZone1RouteIndex = data.evacuationRoutes.findIndex(
-    route => route.id === "route-evacuation-1" || 
-    (route.startPoint === "Danger Zone 1" && route.endPoint === "Community Center")
-  );
-  
-  if (dangerZone1RouteIndex !== -1) {
-    data.evacuationRoutes[dangerZone1RouteIndex].status = "congested";
-  }
-  
-  // Ensure the Chibougamau route is always open
-  const chibougamauRouteIndex = data.evacuationRoutes.findIndex(
-    route => route.endPoint === "Chibougamau"
-  );
-  
-  if (chibougamauRouteIndex !== -1) {
-    data.evacuationRoutes[chibougamauRouteIndex].status = "open";
-  }
+  // DO NOT MODIFY EVACUATION ROUTES - keep them static with fixed statuses
   
   // Generate new alert
   const newAlert = generateNewAlert(data.evacuationRoutes);

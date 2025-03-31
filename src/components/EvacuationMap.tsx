@@ -1,8 +1,8 @@
+
 import { useEffect, useState } from 'react';
 import { TileLayer, useMap } from 'react-leaflet';
 import { Route } from '@/types/mapTypes';
 import { LOCATIONS } from '@/utils/mapUtils';
-import { getRandomStatus } from '@/utils/mapUtils';
 import { initializeRoutes } from '@/services/routeService';
 import RouteStatusLegend from './map/RouteStatusLegend';
 import RoutePolyline from './map/RoutePolyline';
@@ -36,13 +36,20 @@ const EvacuationMap = () => {
   // Initialize routes
   useEffect(() => {
     const routeDefinitions = [
-      { id: 'mistissini-dropose', start: 'mistissini', end: 'dropose' },
-      { id: 'dropose-hospital', start: 'dropose', end: 'hospital' },
-      { id: 'school-chibougamau', start: 'school', end: 'chibougamau' }
+      { id: 'route-1', start: 'Lake Shore', end: 'Eastern Mistissini', status: 'open' },
+      { id: 'route-2', start: 'Danger Zone 1', end: 'Community Center', status: 'congested' },
+      { id: 'route-3', start: 'Mistissini', end: 'Chibougamau', status: 'closed' }
     ];
 
     const loadRoutes = async () => {
+      // Initialize routes with their fixed statuses
       const calculatedRoutes = await initializeRoutes(routeDefinitions, LOCATIONS);
+      
+      // Override the statuses to ensure they match exactly what we defined
+      calculatedRoutes[0].status = 'open';
+      calculatedRoutes[1].status = 'congested';
+      calculatedRoutes[2].status = 'closed';
+      
       setRoutes(calculatedRoutes);
       setIsLoading(false);
     };
@@ -50,29 +57,7 @@ const EvacuationMap = () => {
     loadRoutes();
   }, []);
 
-  // Status updates every 2 minutes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRoutes(prev => prev.map(route => {
-        // Keep the route to Chibougamau open
-        if (route.end.toLowerCase() === 'chibougamau') {
-          return {
-            ...route,
-            status: 'open',
-            updatedAt: new Date()
-          };
-        }
-        
-        return {
-          ...route,
-          status: getRandomStatus(),
-          updatedAt: new Date()
-        };
-      }));
-    }, 120000);
-
-    return () => clearInterval(interval);
-  }, []);
+  // No auto-update interval is needed anymore
 
   // If we're not inside a MapContainer, show a standalone placeholder instead
   if (!isInMapContainer) {

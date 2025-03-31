@@ -20,27 +20,11 @@ export const generateInitialData = (): MapDataType => {
   // Generate initial video feeds
   const initialVideoFeeds = generateInitialVideoFeeds();
   
-  // IMPROVED: Generate evacuation routes based on danger zones to ensure proximity
+  // Generate our fixed evacuation routes (2 street routes, 1 highway route)
   const allEvacuationRoutes = [
-    ...generateStreetEvacuationRoutes(initialDangerZones),
+    ...generateStreetEvacuationRoutes(),
     ...generateHighwayEvacuationRoutes()
   ];
-  
-  // Make the first danger zone evacuation route congested
-  const dangerZone1Route = allEvacuationRoutes.find(route => 
-    (route.startPoint === "Danger Zone 1" && route.endPoint === "Community Center"));
-  
-  if (dangerZone1Route) {
-    dangerZone1Route.status = 'congested';
-  }
-  
-  // Make sure the Chibougamau route is open
-  const chibougamauRoute = allEvacuationRoutes.find(route => 
-    route.endPoint === "Chibougamau");
-  
-  if (chibougamauRoute) {
-    chibougamauRoute.status = 'open';
-  }
   
   return {
     responders: initialResponders,
