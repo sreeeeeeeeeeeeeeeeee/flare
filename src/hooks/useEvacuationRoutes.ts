@@ -7,6 +7,7 @@ import {
   fetchSafeRoute, 
   calculateDistance 
 } from '@/utils/routeCalculationUtils';
+import { getRandomStatus } from '@/utils/mapUtils';
 
 export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
   const [computedRoutes, setComputedRoutes] = useState<Route[]>([]);
@@ -33,6 +34,37 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
       setIsLoading(false);
     }
   }, [routes]);
+
+  // Add automatic status updates every 2 minutes
+  useEffect(() => {
+    if (computedRoutes.length === 0) return;
+    
+    const updateInterval = setInterval(() => {
+      if (isMountedRef.current) {
+        setComputedRoutes(prevRoutes => 
+          prevRoutes.map(route => {
+            // Ensure Lake Shore to Eastern Mistissini route has consistent status
+            if (route.start === "Lake Shore" && route.end === "Eastern Mistissini") {
+              return {
+                ...route,
+                status: "open", // Always keep this specific route open
+                updatedAt: new Date()
+              };
+            }
+            
+            // For other routes, randomly update status
+            return {
+              ...route,
+              status: getRandomStatus(),
+              updatedAt: new Date()
+            };
+          })
+        );
+      }
+    }, 120000); // 120000 ms = 2 minutes
+    
+    return () => clearInterval(updateInterval);
+  }, [computedRoutes]);
 
   const calculateRoutes = useCallback(async () => {
     if (isProcessingRef.current) return;
