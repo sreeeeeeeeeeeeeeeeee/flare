@@ -129,7 +129,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
       {mistissiniStreets.map((street) => (
         <Polyline
           key={`street-base-${street.name}`}
-          positions={street.path}
+          positions={street.path as [number, number][]}
           pathOptions={{
             color: '#94a3b8',
             weight: 2,
@@ -148,7 +148,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
       {mistissiniHighways.map((highway) => (
         <Polyline
           key={`highway-base-${highway.name}`}
-          positions={highway.path}
+          positions={highway.path as [number, number][]}
           pathOptions={{
             color: '#64748b',
             weight: 3,
@@ -188,7 +188,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
         return (
           <Polyline
             key={`evacuation-${route.id}`}
-            positions={path}
+            positions={path as [number, number][]}
             pathOptions={{
               color: route.status === 'open' ? '#22c55e' : route.status === 'congested' ? '#f97316' : '#ef4444',
               weight: 5,
@@ -212,7 +212,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
       {/* Danger zones - Forest Fires */}
       {data.dangerZones.map((zone) => {
         // Convert polygon coordinates to [lat, lng] format for react-leaflet
-        const positions = zone.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
+        const positions = zone.geometry.coordinates[0].map(coord => [coord[1], coord[0]] as [number, number]);
         
         return (
           <Polygon
