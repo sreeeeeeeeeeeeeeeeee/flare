@@ -1,9 +1,8 @@
-
 import { MapDataType, EvacuationRouteType, DangerZoneType } from '@/types/emergency';
 import { mistissiniLocation, mistissiniRegions, mistissiniForestRegions, evacuationDestinations, mistissiniHighways, mistissiniStreets } from './mistissiniData';
 
-// Sample YouTube video - keeping only one video feed
-const droneVideo = 'https://youtu.be/uRFrHhBKAto';
+// Updated YouTube video link
+const droneVideo = 'http://youtu.be/WHBClgDSPd0';
 
 // Generate a much smaller forest fire zone around Mistissini
 const generateForestFireZone = (nearRegion: number, id: string): DangerZoneType => {
