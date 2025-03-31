@@ -1,4 +1,3 @@
-
 import { EvacuationRouteType } from '@/types/emergency';
 import { mistissiniStreets, mistissiniHighways } from '../mistissini';
 
@@ -35,15 +34,9 @@ export const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
       // Convert path coordinates to the format expected by GeoJSON (lng, lat)
       const coordinates = street.path.map(point => [point[1], point[0]]);
       
-      // Explicitly assign different statuses to ensure we have examples of each
-      let status: 'open' | 'congested' | 'closed';
-      if (index === 0) {
-        status = 'congested';
-      } else if (index === 1) {
-        status = 'closed';
-      } else {
-        status = 'open';
-      }
+      // Make all routes consistently "open" in the initial state
+      // for simplicity and to match map display
+      const status: 'open' | 'congested' | 'closed' = 'open';
       
       routes.push({
         id: `route-street-${index + 1}`,
@@ -95,10 +88,18 @@ export const generateHighwayEvacuationRoutes = (): EvacuationRouteType[] => {
 
 // Function to update evacuation route status
 export const updateEvacuationRouteStatus = (routes: EvacuationRouteType[], index: number): EvacuationRouteType => {
+  // Create a copy of the route to modify
+  const updatedRoute = { ...routes[index] };
+  
+  // For the Lake Shore to Eastern Mistissini route, ensure it's consistent
+  if (updatedRoute.startPoint === "Lake Shore" && updatedRoute.endPoint === "Eastern Mistissini") {
+    // This ensures the Lake Shore route has a consistent status
+    updatedRoute.status = "open";
+    return updatedRoute;
+  }
+  
   // Only a 5% chance of changing status to maintain stability
   if (Math.random() > 0.95) {
-    const updatedRoute = { ...routes[index] };
-    
     // For highway routes, keep them mostly open for evacuation
     if (updatedRoute.routeName?.includes("Chibougamau")) {
       updatedRoute.status = Math.random() > 0.9 ? "congested" : "open";
@@ -113,10 +114,7 @@ export const updateEvacuationRouteStatus = (routes: EvacuationRouteType[], index
       const adjustment = Math.round((Math.random() - 0.5) * 3); // +/- 3 minutes max
       updatedRoute.estimatedTime = Math.max(5, currentTime + adjustment); // Ensure at least 5 minutes
     }
-    
-    return updatedRoute;
   }
   
-  // Most of the time, return the unchanged route
-  return routes[index];
+  return updatedRoute;
 };

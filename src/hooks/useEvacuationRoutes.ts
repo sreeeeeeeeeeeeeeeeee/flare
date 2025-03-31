@@ -16,6 +16,19 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
   
   useEffect(() => {
     routesRef.current = routes;
+    
+    const baseRoutes: Route[] = routes.map(route => ({
+      id: route.id,
+      path: route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]),
+      status: route.status,
+      start: route.startPoint,
+      end: route.endPoint,
+      updatedAt: new Date()
+    }));
+    
+    if (isMountedRef.current) {
+      setComputedRoutes(baseRoutes);
+    }
   }, [routes]);
 
   const calculateRoutes = useCallback(async () => {
@@ -23,8 +36,7 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
     
     isProcessingRef.current = true;
     try {
-      // First set basic routes based on provided data
-      const baseRoutes: Route[] = routesRef.current.map(route => ({
+      const currentRoutes = computedRoutes.length > 0 ? computedRoutes : routesRef.current.map(route => ({
         id: route.id,
         path: route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]),
         status: route.status,
@@ -33,20 +45,13 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
         updatedAt: new Date()
       }));
       
-      if (isMountedRef.current) {
-        setComputedRoutes(baseRoutes);
-      }
-      
-      // Then enhance with more accurate road-based routes
       const enhancedRoutes: Route[] = [];
       
       for (const route of routesRef.current) {
         try {
-          // Get start and end coordinates
           const startCoords = getLocationCoordinates(route.startPoint);
           const endCoords = getLocationCoordinates(route.endPoint);
 
-          // Get safe route avoiding water
           const path = await fetchSafeRoute(startCoords, endCoords);
           
           const enhancedRoute: Route = {
@@ -60,13 +65,11 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
           
           enhancedRoutes.push(enhancedRoute);
           
-          // Add a slight delay to prevent hitting API rate limits
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
           console.error(`Error calculating route ${route.id}:`, error);
           
-          // Keep the original route if enhancement fails
-          const originalRoute = baseRoutes.find(r => r.id === route.id);
+          const originalRoute = currentRoutes.find(r => r.id === route.id);
           if (originalRoute) {
             enhancedRoutes.push(originalRoute);
           }
@@ -85,7 +88,7 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
     } finally {
       isProcessingRef.current = false;
     }
-  }, []);
+  }, [computedRoutes]);
 
   useEffect(() => {
     isMountedRef.current = true;
