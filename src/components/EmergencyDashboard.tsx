@@ -1,4 +1,7 @@
+
 import React from 'react';
+import { Badge } from "@/components/ui/badge";
+import { MapPin, AlertTriangle } from "lucide-react";
 
 const EmergencyDashboard = () => {
   // Sample data - updated to match the rest of the application
@@ -37,6 +40,20 @@ const EmergencyDashboard = () => {
         return 'text-red-500 bg-red-50';
       default:
         return 'text-blue-500 bg-blue-50';
+    }
+  };
+
+  // Function to get badge variant based on status
+  const getBadgeVariant = (status) => {
+    switch (status) {
+      case 'open':
+        return 'bg-green-500/10 text-green-500 hover:bg-green-500/20';
+      case 'congested':
+        return 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20';
+      case 'closed':
+        return 'bg-red-500/10 text-red-500 hover:bg-red-500/20';
+      default:
+        return 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20';
     }
   };
 
@@ -91,45 +108,59 @@ const EmergencyDashboard = () => {
         </div>
       </div>
 
-      {/* Enhanced Evacuation Routes Section - Updated with status badges */}
-      <div className="mb-6">
-        <h3 className="font-bold mb-3">Evacuation Routes</h3>
+      {/* Redesigned Evacuation Routes Section */}
+      <div className="mb-6 bg-slate-950/5 p-4 rounded-lg">
+        <h3 className="font-bold text-lg mb-4 flex items-center">
+          <MapPin className="h-5 w-5 mr-2 text-slate-700" />
+          Evacuation Routes
+        </h3>
+        
         {activeRoutes.length > 0 ? (
           <div className="space-y-3">
             {activeRoutes.map((route, index) => (
-              <div key={index} className="border-l-4 border-blue-500 pl-3 py-1">
+              <div key={index} className="bg-white border border-slate-200 rounded-md shadow-sm p-3">
                 <div className="flex justify-between items-start">
-                  <span className="font-medium">{route.name}</span>
-                  <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${getStatusColor(route.status)}`}>
+                  <div className="flex-1">
+                    <div className="font-medium">{route.name}</div>
+                    <div className="flex justify-between text-sm text-slate-500 mt-1">
+                      <span>{route.distance}</span>
+                      <span>Updated: {route.updated}</span>
+                    </div>
+                  </div>
+                  <Badge 
+                    className={`ml-2 ${getBadgeVariant(route.status)}`}
+                  >
                     {route.status.toUpperCase()}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>{route.distance}</span>
-                  <span>Updated: {route.updated}</span>
+                  </Badge>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-gray-500 italic">Calculating evacuation routes...</div>
+          <div className="text-center py-8 text-slate-500 bg-slate-100/50 rounded-md">
+            <div className="flex justify-center mb-2">
+              <svg className="animate-spin h-6 w-6 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+            <div>Calculating evacuation routes...</div>
+          </div>
         )}
-      </div>
-
-      {/* Add status legend */}
-      <div className="mb-6">
-        <h4 className="text-sm font-medium mb-2">Route Status Legend</h4>
-        <div className="flex space-x-4">
+        
+        {/* Status legend - redesigned */}
+        <div className="mt-4 flex flex-wrap gap-3 bg-white p-2 rounded border border-slate-200">
+          <div className="text-xs font-medium text-slate-500 mr-1">Route Status:</div>
           <div className="flex items-center">
-            <div className="w-3 h-3 rounded-full bg-green-500 mr-1"></div>
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500 mr-1.5"></div>
             <span className="text-xs">Open</span>
           </div>
           <div className="flex items-center">
-            <div className="w-3 h-3 rounded-full bg-amber-500 mr-1"></div>
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1.5"></div>
             <span className="text-xs">Congested</span>
           </div>
           <div className="flex items-center">
-            <div className="w-3 h-3 rounded-full bg-red-500 mr-1"></div>
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500 mr-1.5"></div>
             <span className="text-xs">Closed</span>
           </div>
         </div>
