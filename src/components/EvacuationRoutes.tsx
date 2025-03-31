@@ -25,18 +25,19 @@ interface EvacuationRoutesProps {
   standalone?: boolean;
 }
 
-// Known locations in Mistissini with coordinates
+// Enhanced location database with proper coordinates
 const LOCATIONS: Record<string, [number, number]> = {
-  police: [50.4230, -73.8720],
-  fire: [50.4215, -73.8695],
-  Mistissini: [50.4221, -73.8683],
-  medie: [50.4208, -73.8660], // Medical center
-  hospital: [50.4230, -73.8780],
-  community: [50.4232, -73.8660],
-  school: [50.4225, -73.8700],
-  arena: [50.4210, -73.8750],
-  store: [50.4228, -73.8690],
-  highway: [50.4270, -73.8620]
+  police: [50.4230, -73.8720],       // Police station in Mistissini
+  fire: [50.4215, -73.8695],         // Fire department
+  Mistissini: [50.4221, -73.8683],   // Central Mistissini
+  medie: [50.4208, -73.8660],        // Medical center
+  hospital: [50.4230, -73.8780],     // Hospital
+  community: [50.4232, -73.8660],    // Community center
+  school: [50.4225, -73.8700],       // School
+  arena: [50.4210, -73.8750],        // Arena
+  store: [50.4228, -73.8690],        // Store
+  highway: [50.4270, -73.8620],      // Highway exit
+  Gur: [50.4200, -73.8700]           // Additional location
 };
 
 const GRAPHHOPPER_API_KEY = '5adb1e1c-29a2-4293-81c1-1c81779679bb';
@@ -126,7 +127,8 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
               `point=${startCoords[0]},${startCoords[1]}&` +
               `point=${endCoords[0]},${endCoords[1]}&` +
               `vehicle=car&key=${GRAPHHOPPER_API_KEY}&` +
-              `points_encoded=false`
+              `points_encoded=false&` +
+              `locale=en`
             );
 
             if (!response.ok) {
@@ -161,7 +163,7 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
           enhancedRoutes.push(enhancedRoute);
           
           // Add a slight delay to prevent hitting API rate limits
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
           console.error(`Error calculating route ${route.id}:`, error);
           
