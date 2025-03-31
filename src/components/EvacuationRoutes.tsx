@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from "react";
 import { Polyline, Popup } from "react-leaflet";
 import { EvacuationRouteType } from "@/types/emergency";
@@ -58,7 +57,7 @@ const extractCoordinates = (locationString: string): { lat: number; lng: number 
   return { lat: 50.4175, lng: -73.8682 };
 };
 
-// Persistent cache for route data to avoid excessive API calls
+// Global route cache to persist between renders
 const routeCache: Record<string, [number, number][]> = {};
 
 // Function to generate a cache key for routes
@@ -93,13 +92,15 @@ const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: numbe
   
   try {
     const url = `https://graphhopper.com/api/1/route?point=${start.lat},${start.lng}&point=${end.lat},${end.lng}&vehicle=car&locale=en&key=${API_KEY}&points_encoded=false`;
+    
     const response = await fetch(url);
-    const data = await response.json();
     
     if (!response.ok) {
-      console.warn(`GraphHopper API error (${response.status}): ${data.message}`);
-      return null;
+      console.warn(`GraphHopper API error: ${response.status}`);
+      throw new Error(`API request failed with status ${response.status}`);
     }
+    
+    const data = await response.json();
     
     if (data.paths && data.paths.length > 0) {
       // Convert from [lng, lat] to [lat, lng] format
@@ -109,7 +110,7 @@ const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: numbe
       return route;
     }
     
-    console.error("No path found in GraphHopper response:", data);
+    console.error("No path found in GraphHopper response");
     return null;
   } catch (error) {
     console.error("Error fetching route from GraphHopper:", error);
@@ -119,55 +120,42 @@ const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: numbe
 
 const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps) => {
   const [computedRoutes, setComputedRoutes] = useState<RouteCoordinates[]>([]);
-  const processedRoutesRef = useRef<Record<string, boolean>>({});
   
   useEffect(() => {
     // Only process routes if we're not in standalone mode
     if (!standalone) {
       console.log("Processing evacuation routes:", routes.length);
       
-      // Keep track of processed routes for this batch
-      const processedThisBatch: Record<string, boolean> = {};
+      // First, create routes using existing geometry (this ensures we always have something to display)
+      const baseRoutes = routes.map(route => {
+        // Convert from [lng, lat] to [lat, lng] format for react-leaflet
+        const path = route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]);
+        
+        return { 
+          id: route.id, 
+          path, 
+          status: route.status,
+          routeName: route.routeName || '',
+          startPoint: route.startPoint,
+          endPoint: route.endPoint,
+          estimatedTime: route.estimatedTime,
+          transportMethods: route.transportMethods
+        } as RouteCoordinates;
+      });
       
-      // Define an async function to process routes with GraphHopper API
-      const processRoutes = async () => {
-        // First, create a base set of routes using existing geometry
-        const baseRoutes = routes.map(route => {
-          // Convert from [lng, lat] to [lat, lng] format for react-leaflet
-          const path = route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]);
-          
-          return { 
-            id: route.id, 
-            path, 
-            status: route.status,
-            routeName: route.routeName || '',
-            startPoint: route.startPoint,
-            endPoint: route.endPoint,
-            estimatedTime: route.estimatedTime,
-            transportMethods: route.transportMethods
-          } as RouteCoordinates;
-        });
-        
-        // Update state immediately with the base routes to ensure something is displayed
-        setComputedRoutes(baseRoutes);
-        
-        // Then, try to enhance routes with GraphHopper data in batches
+      // Update state immediately with the base routes
+      setComputedRoutes(baseRoutes);
+      
+      // Then process each route sequentially to avoid rate limiting
+      const processRoutesSequentially = async () => {
         for (let i = 0; i < routes.length; i++) {
           const route = routes[i];
-          
-          // Skip if we've processed this route in a previous update and it hasn't changed status
-          if (processedRoutesRef.current[route.id] && !processedThisBatch[route.id]) {
-            processedThisBatch[route.id] = true;
-            continue;
-          }
-          
           try {
             // Extract start and end coordinates from the route
             const startCoords = extractCoordinates(route.startPoint);
             const endCoords = extractCoordinates(route.endPoint);
             
             if (!startCoords || !endCoords) {
-              console.error("Invalid coordinates for route:", route.id);
               continue;
             }
             
@@ -175,34 +163,25 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
             const path = await fetchRoute(startCoords, endCoords);
             
             if (path) {
-              // Update this specific route with new path data
-              setComputedRoutes(prevRoutes => {
-                return prevRoutes.map(r => {
-                  if (r.id === route.id) {
-                    return { ...r, path };
-                  }
-                  return r;
-                });
-              });
-              
-              // Mark as processed
-              processedRoutesRef.current[route.id] = true;
-              processedThisBatch[route.id] = true;
+              // Update this specific route with enhanced path data
+              setComputedRoutes(prevRoutes => 
+                prevRoutes.map(r => r.id === route.id ? { ...r, path } : r)
+              );
             }
             
-            // Add a small delay between requests to avoid rate limiting
+            // Add a reasonable delay between requests to avoid API rate limiting
             if (i < routes.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 250));
+              await new Promise(resolve => setTimeout(resolve, 300));
             }
           } catch (err) {
-            console.error("Error processing route:", err);
-            continue;
+            // Just log the error and continue with the next route
+            console.error(`Error processing route ${route.id}:`, err);
           }
         }
       };
       
-      // Process routes immediately
-      processRoutes();
+      // Start processing routes
+      processRoutesSequentially();
     }
   }, [routes, standalone]);
 
