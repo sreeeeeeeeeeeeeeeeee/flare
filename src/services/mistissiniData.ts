@@ -1,3 +1,4 @@
+
 import { MistissiniRegion } from '@/types/emergency';
 
 // Mistissini, Quebec coordinates and nearby locations
@@ -85,7 +86,7 @@ export const evacuationDestinations = [
   }
 ];
 
-// Updated streets in Mistissini with coordinates that follow real roads
+// Updated streets in Mistissini aligned with the actual map
 export const mistissiniStreets = [
   {
     name: "Main Street",
@@ -147,14 +148,40 @@ export const mistissiniStreets = [
     ]
   },
   {
-    name: "Cree Cultural Way",
-    description: "Road passing cultural landmarks",
+    name: "Euelsti Street",
+    description: "East-west street through residential area",
     path: [
-      [50.4225, -73.8700],
-      [50.4220, -73.8715],
-      [50.4215, -73.8730],
-      [50.4210, -73.8745],
-      [50.4205, -73.8760]
+      [50.4175, -73.8610],
+      [50.4180, -73.8630],
+      [50.4180, -73.8650],
+      [50.4180, -73.8670],
+      [50.4180, -73.8690],
+      [50.4180, -73.8710],
+      [50.4180, -73.8730]
+    ]
+  },
+  {
+    name: "Amisk Street",
+    description: "Residential street in southern Mistissini",
+    path: [
+      [50.4160, -73.8630],
+      [50.4165, -73.8650],
+      [50.4165, -73.8670],
+      [50.4165, -73.8690],
+      [50.4165, -73.8710],
+      [50.4165, -73.8730]
+    ]
+  },
+  {
+    name: "Spruce Street",
+    description: "Northern diagonal street",
+    path: [
+      [50.4190, -73.8550],
+      [50.4200, -73.8570],
+      [50.4210, -73.8590],
+      [50.4220, -73.8610],
+      [50.4230, -73.8630],
+      [50.4240, -73.8650]
     ]
   },
   {

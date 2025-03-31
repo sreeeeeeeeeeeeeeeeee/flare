@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from "react";
 import { Polyline, Popup } from "react-leaflet";
 import { EvacuationRouteType } from "@/types/emergency";
@@ -34,16 +35,19 @@ const extractCoordinates = (locationString: string): { lat: number; lng: number 
   
   // For testing, use predefined coordinates for certain locations
   const locationMap: Record<string, { lat: number; lng: number }> = {
-    'Mistissini': { lat: 50.4175, lng: -73.8682 },
+    'Mistissini': { lat: 50.4221, lng: -73.8683 },
     'Chibougamau': { lat: 49.9166, lng: -74.3694 },
     'Ouje-Bougoumou': { lat: 49.9257, lng: -74.8107 },
     'Waswanipi': { lat: 49.6892, lng: -75.9564 },
     'Nemaska': { lat: 51.6900, lng: -76.2342 },
     'Hospital': { lat: 50.4230, lng: -73.8780 },
     'School': { lat: 50.4210, lng: -73.8730 },
-    'Community Center': { lat: 50.4190, lng: -73.8650 },
+    'Community Center': { lat: 50.4232, lng: -73.8660 },
     'Lake Shore': { lat: 50.4150, lng: -73.8900 },
-    'Forest Edge': { lat: 50.4250, lng: -73.8500 }
+    'Forest Edge': { lat: 50.4250, lng: -73.8500 },
+    'Euelsti Street': { lat: 50.4180, lng: -73.8650 },
+    'Amisk Street': { lat: 50.4165, lng: -73.8670 },
+    'Spruce Street': { lat: 50.4200, lng: -73.8570 }
   };
 
   // Check if the location name is in our map
@@ -54,7 +58,7 @@ const extractCoordinates = (locationString: string): { lat: number; lng: number 
   }
 
   // Default to Mistissini center if no match
-  return { lat: 50.4175, lng: -73.8682 };
+  return { lat: 50.4221, lng: -73.8683 };
 };
 
 // Global route cache to persist between renders
@@ -81,10 +85,10 @@ const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: numbe
     Math.pow((start.lng - end.lng) * 111 * Math.cos(start.lat * Math.PI / 180), 2)
   );
   
-  if (distance < 0.5) { // Less than 500m
+  if (distance < 0.3) { // Less than 300m
     // Create a smoother path with more points for short distances
     const directRoute: [number, number][] = [];
-    const steps = Math.max(5, Math.ceil(distance * 20)); // At least 5 points, more for longer distances
+    const steps = Math.max(8, Math.ceil(distance * 30)); // At least 8 points, more for longer distances
     
     for (let i = 0; i <= steps; i++) {
       const ratio = i / steps;
@@ -101,6 +105,7 @@ const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: numbe
   try {
     const url = `https://graphhopper.com/api/1/route?point=${start.lat},${start.lng}&point=${end.lat},${end.lng}&vehicle=car&locale=en&key=${API_KEY}&points_encoded=false`;
     
+    console.log(`Fetching route from GraphHopper: ${start.lat},${start.lng} to ${end.lat},${end.lng}`);
     const response = await fetch(url);
     
     if (!response.ok) {
@@ -115,6 +120,7 @@ const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: numbe
       const route = data.paths[0].points.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
       // Cache the result
       routeCache[cacheKey] = route;
+      console.log(`Successfully fetched route with ${route.length} points`);
       return route;
     }
     
@@ -164,8 +170,11 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
             const endCoords = extractCoordinates(route.endPoint);
             
             if (!startCoords || !endCoords) {
+              console.warn(`Could not extract coordinates for route ${route.id}: ${route.startPoint} to ${route.endPoint}`);
               continue;
             }
+            
+            console.log(`Processing route ${route.id}: ${route.startPoint} (${startCoords.lat}, ${startCoords.lng}) to ${route.endPoint} (${endCoords.lat}, ${endCoords.lng})`);
             
             // Try to fetch enhanced route data
             const path = await fetchRoute(startCoords, endCoords);
@@ -175,11 +184,12 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
               setComputedRoutes(prevRoutes => 
                 prevRoutes.map(r => r.id === route.id ? { ...r, path } : r)
               );
+              console.log(`Updated route ${route.id} with ${path.length} points`);
             }
             
             // Add a longer delay between requests to avoid API rate limiting
             if (i < routes.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 500));
+              await new Promise(resolve => setTimeout(resolve, 1000));
             }
           } catch (err) {
             // Just log the error and continue with the next route

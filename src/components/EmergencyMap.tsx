@@ -32,7 +32,7 @@ function MapUpdater({ data }: { data: MapDataType }) {
     // Only set the initial view once when the component mounts
     if (!initialSetupDoneRef.current) {
       // Focus on Mistissini by default with a closer zoom level to see streets
-      map.setView([mistissiniLocation.center.lat, mistissiniLocation.center.lng], 15);
+      map.setView([mistissiniLocation.center.lat, mistissiniLocation.center.lng], 16);
       initialSetupDoneRef.current = true;
     }
   }, [map, data]);
@@ -102,7 +102,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
   return (
     <MapContainer 
       center={[mistissiniLocation.center.lat, mistissiniLocation.center.lng]} 
-      zoom={15} 
+      zoom={16} 
       style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
       className="z-0"
       zoomControl={true}
@@ -135,8 +135,8 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
           positions={street.path as [number, number][]}
           pathOptions={{
             color: '#94a3b8',
-            weight: 2,
-            opacity: 0.5,
+            weight: 2.5,
+            opacity: 0.65,
             dashArray: '4, 4',
             lineJoin: 'round',
             lineCap: 'round'
@@ -156,9 +156,9 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
           positions={highway.path as [number, number][]}
           pathOptions={{
             color: '#64748b',
-            weight: 3,
-            opacity: 0.4,
-            dashArray: '10, 5',
+            weight: 3.5,
+            opacity: 0.5,
+            dashArray: '8, 6',
             lineJoin: 'round',
             lineCap: 'round'
           }}
