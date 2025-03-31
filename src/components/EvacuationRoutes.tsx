@@ -1,5 +1,4 @@
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Polyline, Popup } from "react-leaflet";
 import { EvacuationRouteType } from "@/types/emergency";
 
@@ -58,17 +57,58 @@ const extractCoordinates = (locationString: string): { lat: number; lng: number 
   return { lat: 50.4175, lng: -73.8682 };
 };
 
-// Function to fetch route from GraphHopper API
+// Cache for route data to avoid excessive API calls
+const routeCache: Record<string, [number, number][]> = {};
+
+// Function to generate a cache key for routes
+const getCacheKey = (start: { lat: number; lng: number }, end: { lat: number; lng: number }): string => {
+  return `${start.lat.toFixed(4)},${start.lng.toFixed(4)}_${end.lat.toFixed(4)},${end.lng.toFixed(4)}`;
+};
+
+// Function to fetch route from GraphHopper API with caching
 const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: number; lng: number }) => {
+  // Generate cache key for this route
+  const cacheKey = getCacheKey(start, end);
+  
+  // Return cached result if available
+  if (routeCache[cacheKey]) {
+    return routeCache[cacheKey];
+  }
+  
+  // For very small distances, just return a direct line
+  const distance = Math.sqrt(
+    Math.pow((start.lat - end.lat) * 111, 2) + 
+    Math.pow((start.lng - end.lng) * 111 * Math.cos(start.lat * Math.PI / 180), 2)
+  );
+  
+  if (distance < 0.5) { // Less than 500m
+    const directRoute: [number, number][] = [
+      [start.lat, start.lng],
+      [end.lat, end.lng]
+    ];
+    routeCache[cacheKey] = directRoute;
+    return directRoute;
+  }
+  
   const url = `https://graphhopper.com/api/1/route?point=${start.lat},${start.lng}&point=${end.lat},${end.lng}&vehicle=car&locale=en&key=${API_KEY}&points_encoded=false`;
 
   try {
     const response = await fetch(url);
     const data = await response.json();
+    
+    if (!response.ok) {
+      console.warn(`GraphHopper API error (${response.status}): ${data.message}`);
+      return null;
+    }
+    
     if (data.paths && data.paths.length > 0) {
       // Convert from [lng, lat] to [lat, lng] format
-      return data.paths[0].points.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
+      const route = data.paths[0].points.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
+      // Cache the result
+      routeCache[cacheKey] = route;
+      return route;
     }
+    
     console.error("No path found in GraphHopper response:", data);
     return null;
   } catch (error) {
@@ -79,15 +119,48 @@ const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: numbe
 
 const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps) => {
   const [computedRoutes, setComputedRoutes] = useState<RouteCoordinates[]>([]);
+  const processedRoutesRef = useRef<Record<string, boolean>>({});
   
   useEffect(() => {
     // Only process routes if we're not in standalone mode
     if (!standalone) {
       console.log("Processing evacuation routes:", routes.length);
       
+      // Keep track of processed routes for this batch
+      const processedThisBatch: Record<string, boolean> = {};
+      
       // Define an async function to process routes with GraphHopper API
       const processRoutes = async () => {
-        const routePromises = routes.map(async (route) => {
+        // First, create a base set of routes using existing geometry
+        const baseRoutes = routes.map(route => {
+          // Convert from [lng, lat] to [lat, lng] format for react-leaflet
+          const path = route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]);
+          
+          return { 
+            id: route.id, 
+            path, 
+            status: route.status,
+            routeName: route.routeName || '',
+            startPoint: route.startPoint,
+            endPoint: route.endPoint,
+            estimatedTime: route.estimatedTime,
+            transportMethods: route.transportMethods
+          } as RouteCoordinates;
+        });
+        
+        // Update state immediately with the base routes to ensure something is displayed
+        setComputedRoutes(baseRoutes);
+        
+        // Then, try to enhance routes with GraphHopper data in batches
+        for (let i = 0; i < routes.length; i++) {
+          const route = routes[i];
+          
+          // Skip if we've processed this route in a previous update and it hasn't changed status
+          if (processedRoutesRef.current[route.id] && !processedThisBatch[route.id]) {
+            processedThisBatch[route.id] = true;
+            continue;
+          }
+          
           try {
             // Extract start and end coordinates from the route
             const startCoords = extractCoordinates(route.startPoint);
@@ -95,46 +168,37 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
             
             if (!startCoords || !endCoords) {
               console.error("Invalid coordinates for route:", route.id);
-              return null;
+              continue;
             }
             
-            // Fetch the route path from GraphHopper API
+            // Try to fetch enhanced route data
             const path = await fetchRoute(startCoords, endCoords);
             
-            if (!path) {
-              console.warn(`No path returned for route ${route.id}, using existing geometry`);
-              // Fallback to existing geometry if API fails
-              return { 
-                id: route.id, 
-                path: route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]), 
-                status: route.status,
-                routeName: route.routeName || '',
-                startPoint: route.startPoint,
-                endPoint: route.endPoint,
-                estimatedTime: route.estimatedTime,
-                transportMethods: route.transportMethods
-              } as RouteCoordinates;
+            if (path) {
+              // Update this specific route with new path data
+              setComputedRoutes(prevRoutes => {
+                return prevRoutes.map(r => {
+                  if (r.id === route.id) {
+                    return { ...r, path };
+                  }
+                  return r;
+                });
+              });
+              
+              // Mark as processed
+              processedRoutesRef.current[route.id] = true;
+              processedThisBatch[route.id] = true;
             }
             
-            return { 
-              id: route.id, 
-              path, 
-              status: route.status,
-              routeName: route.routeName || '',
-              startPoint: route.startPoint,
-              endPoint: route.endPoint,
-              estimatedTime: route.estimatedTime,
-              transportMethods: route.transportMethods
-            } as RouteCoordinates;
+            // Add a small delay between requests to avoid rate limiting
+            if (i < routes.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 250));
+            }
           } catch (err) {
             console.error("Error processing route:", err);
-            return null;
+            continue;
           }
-        });
-        
-        const newRoutes = (await Promise.all(routePromises)).filter((r): r is RouteCoordinates => r !== null);
-        console.log("Valid routes processed:", newRoutes.length);
-        setComputedRoutes(newRoutes);
+        }
       };
       
       // Process routes immediately
