@@ -1,179 +1,138 @@
 
-import { ArrowRight, Route, Car, Truck, PersonStanding, MapPin } from 'lucide-react';
-import { EvacuationRouteType } from '@/types/emergency';
+import { useEffect, useState } from "react";
+import { Polyline, Popup } from "react-leaflet";
+import { EvacuationRouteType } from "@/types/emergency";
 
-type EvacuationRoutesProps = {
-  routes: EvacuationRouteType[];
+// GraphHopper API integration for evacuation routes
+const GRAPH_HOPPER_API_KEY = "5adb1e1c-29a2-4293-81c1-1c81779679bb";
+
+type RouteCoordinates = {
+  id: string;
+  path: [number, number][];
+  status: string;
+  routeName: string;
+  startPoint: string;
+  endPoint: string;
+  estimatedTime: number;
+  transportMethods: string[];
 };
 
-const EvacuationRoutes = ({ routes }: EvacuationRoutesProps) => {
-  // First sort routes by status (open first, then congested, then closed)
-  const sortedRoutes = [...routes].sort((a, b) => {
-    if (a.status === 'open' && b.status !== 'open') return -1;
-    if (a.status !== 'open' && b.status === 'open') return 1;
-    if (a.status === 'congested' && b.status === 'closed') return -1;
-    if (a.status === 'closed' && b.status === 'congested') return 1;
-    return 0;
-  });
+interface EvacuationRoutesProps {
+  routes: EvacuationRouteType[];
+}
 
-  // Group the routes by category: local streets vs highways
-  const localRoutes = sortedRoutes.filter(route => 
-    !route.routeName?.includes('Route') && 
-    !route.routeName?.includes('Road to')
-  );
-  
-  const highwayRoutes = sortedRoutes.filter(route => 
-    route.routeName?.includes('Route') || 
-    route.routeName?.includes('Road to')
-  );
+const EvacuationRoutes = ({ routes }: EvacuationRoutesProps) => {
+  const [computedRoutes, setComputedRoutes] = useState<RouteCoordinates[]>([]);
+
+  const fetchRoute = async (startLat: number, startLng: number, endLat: number, endLng: number) => {
+    try {
+      console.log(`Fetching route from [${startLat},${startLng}] to [${endLat},${endLng}]`);
+      const url = `https://graphhopper.com/api/1/route?point=${startLat},${startLng}&point=${endLat},${endLng}&vehicle=car&locale=en&key=${GRAPH_HOPPER_API_KEY}&points_encoded=false`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.paths && data.paths[0] && data.paths[0].points && data.paths[0].points.coordinates) {
+        const convertedPath = data.paths[0].points.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
+        console.log("Successfully fetched path:", convertedPath.length, "points");
+        return convertedPath;
+      } else {
+        console.error("Invalid response structure from GraphHopper API:", data);
+        // Return a direct line between start and end as fallback
+        return [[startLat, startLng], [endLat, endLng]];
+      }
+    } catch (error) {
+      console.error("Error fetching route:", error);
+      // Return a direct line between start and end as fallback
+      return [[startLat, startLng], [endLat, endLng]];
+    }
+  };
+
+  useEffect(() => {
+    // Process each route in the data
+    const getRoutes = async () => {
+      console.log("Processing evacuation routes:", routes.length);
+      
+      // Process each route in the data
+      const newRoutes = await Promise.all(
+        routes.map(async (route) => {
+          try {
+            console.log("Processing route:", route.id, route.routeName);
+            
+            // Extract start/end coordinates from route geometry or use fallbacks
+            let startLat, startLng, endLat, endLng;
+            
+            if (route.geometry && route.geometry.coordinates && route.geometry.coordinates.length >= 2) {
+              // Get first and last points from the route geometry
+              startLng = route.geometry.coordinates[0][0];
+              startLat = route.geometry.coordinates[0][1];
+              endLng = route.geometry.coordinates[route.geometry.coordinates.length - 1][0];
+              endLat = route.geometry.coordinates[route.geometry.coordinates.length - 1][1];
+            } else {
+              // Fallback: generate points near Mistissini
+              startLat = 50.4221 - 0.01 + Math.random() * 0.005;
+              startLng = -73.8683 - 0.01 + Math.random() * 0.005;
+              endLat = 50.4221 - 0.005 + Math.random() * 0.01;
+              endLng = -73.8683 - 0.005 + Math.random() * 0.01;
+            }
+            
+            // Fetch the route using GraphHopper API
+            console.log("Using GraphHopper API to fetch route");
+            const path = await fetchRoute(startLat, startLng, endLat, endLng);
+            
+            console.log(`Route ${route.id} processed with ${path.length} points`);
+            
+            return { 
+              id: route.id, 
+              path, 
+              status: route.status,
+              routeName: route.routeName || '',
+              startPoint: route.startPoint,
+              endPoint: route.endPoint,
+              estimatedTime: route.estimatedTime,
+              transportMethods: route.transportMethods
+            };
+          } catch (err) {
+            console.error("Error processing route:", err);
+            return null;
+          }
+        })
+      );
+      
+      // Filter out any failed routes and set in state
+      const validRoutes = newRoutes.filter((r): r is RouteCoordinates => r !== null);
+      console.log("Valid routes processed:", validRoutes.length);
+      setComputedRoutes(validRoutes);
+    };
+
+    getRoutes();
+  }, [routes]);
+
+  console.log("Rendering evacuation routes:", computedRoutes.length);
 
   return (
-    <div className="border border-border rounded-lg bg-card flex flex-col overflow-hidden h-full">
-      <div className="p-3 border-b border-border flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <Route className="h-4 w-4 text-safe" />
-          <h3 className="font-medium text-sm">Evacuation Routes</h3>
-        </div>
-      </div>
-      
-      <div className="flex-grow overflow-y-auto p-2 space-y-4">
-        {sortedRoutes.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-            No evacuation routes available
-          </div>
-        ) : (
-          <>
-            {/* Highway Routes Section */}
-            {highwayRoutes.length > 0 && (
-              <div className="space-y-2">
-                <div className="text-xs font-semibold text-primary px-1">
-                  Regional Evacuation Routes
-                </div>
-                
-                {highwayRoutes.map(route => (
-                  <div 
-                    key={route.id}
-                    className={`p-3 rounded border text-sm ${
-                      route.status === 'open' 
-                        ? 'bg-safe/10 border-safe' 
-                        : route.status === 'congested' 
-                          ? 'bg-warning/10 border-warning' 
-                          : 'bg-danger/10 border-danger'
-                    }`}
-                  >
-                    <div className="flex items-start">
-                      <div className="flex-grow">
-                        <div className="font-medium">{route.routeName || 'Evacuation Route'}</div>
-                        
-                        <div className="text-xs mt-1 flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          <span>{route.startPoint}</span>
-                          <ArrowRight className="h-3 w-3" />
-                          <span>{route.endPoint}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 mt-2">
-                          <div className={`text-xs px-2 py-0.5 rounded-full ${
-                            route.status === 'open' 
-                              ? 'bg-safe text-white' 
-                              : route.status === 'congested' 
-                                ? 'bg-warning text-white' 
-                                : 'bg-danger text-white'
-                          }`}>
-                            {route.status.toUpperCase()}
-                          </div>
-                          
-                          <div className="text-xs text-muted-foreground">
-                            {route.estimatedTime} min
-                          </div>
-                        </div>
-                        
-                        <div className="mt-2 flex items-center gap-1">
-                          <span className="text-xs text-muted-foreground mr-1">Transport:</span>
-                          {route.transportMethods.includes('car') && (
-                            <Car className="h-3 w-3 text-muted-foreground" />
-                          )}
-                          {route.transportMethods.includes('emergency') && (
-                            <Truck className="h-3 w-3 text-muted-foreground" />
-                          )}
-                          {route.transportMethods.includes('foot') && (
-                            <PersonStanding className="h-3 w-3 text-muted-foreground" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {/* Local Routes Section */}
-            {localRoutes.length > 0 && (
-              <div className="space-y-2">
-                <div className="text-xs font-semibold text-primary px-1">
-                  Local Street Routes
-                </div>
-                
-                {localRoutes.map(route => (
-                  <div 
-                    key={route.id}
-                    className={`p-3 rounded border text-sm ${
-                      route.status === 'open' 
-                        ? 'bg-safe/10 border-safe' 
-                        : route.status === 'congested' 
-                          ? 'bg-warning/10 border-warning' 
-                          : 'bg-danger/10 border-danger'
-                    }`}
-                  >
-                    <div className="flex items-start">
-                      <div className="flex-grow">
-                        <div className="font-medium">{route.routeName || 'Evacuation Route'}</div>
-                        
-                        <div className="text-xs mt-1 flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          <span>{route.startPoint}</span>
-                          <ArrowRight className="h-3 w-3" />
-                          <span>{route.endPoint}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 mt-2">
-                          <div className={`text-xs px-2 py-0.5 rounded-full ${
-                            route.status === 'open' 
-                              ? 'bg-safe text-white' 
-                              : route.status === 'congested' 
-                                ? 'bg-warning text-white' 
-                                : 'bg-danger text-white'
-                          }`}>
-                            {route.status.toUpperCase()}
-                          </div>
-                          
-                          <div className="text-xs text-muted-foreground">
-                            {route.estimatedTime} min
-                          </div>
-                        </div>
-                        
-                        <div className="mt-2 flex items-center gap-1">
-                          <span className="text-xs text-muted-foreground mr-1">Transport:</span>
-                          {route.transportMethods.includes('car') && (
-                            <Car className="h-3 w-3 text-muted-foreground" />
-                          )}
-                          {route.transportMethods.includes('emergency') && (
-                            <Truck className="h-3 w-3 text-muted-foreground" />
-                          )}
-                          {route.transportMethods.includes('foot') && (
-                            <PersonStanding className="h-3 w-3 text-muted-foreground" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+    <>
+      {computedRoutes.map((route) => (
+        <Polyline
+          key={`evac-route-${route.id}`}
+          positions={route.path}
+          pathOptions={{
+            color: route.status === "open" ? "#22c55e" : route.status === "congested" ? "#f97316" : "#ef4444",
+            weight: 5,
+            opacity: 0.9,
+            lineCap: "round",
+          }}
+        >
+          <Popup>
+            <div className="text-sm font-medium">{route.routeName}</div>
+            <div className="text-xs">From: {route.startPoint} to {route.endPoint}</div>
+            <div className="text-xs">Status: {route.status}</div>
+            <div className="text-xs">Estimated Time: {route.estimatedTime} min</div>
+            <div className="text-xs">Transport: {route.transportMethods.join(', ')}</div>
+          </Popup>
+        </Polyline>
+      ))}
+    </>
   );
 };
 
