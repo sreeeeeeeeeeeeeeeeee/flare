@@ -14,16 +14,16 @@ const getStreetRoute = (start: string, end: string): [number, number][] => {
   
   // Return a street path or fallback
   return streetRoutes[0] || [
-    [50.4220, -73.8700], // Default start
-    [50.4230, -73.8670]  // Default end
+    [50.4220, -73.8700] as [number, number], // Default start
+    [50.4230, -73.8670] as [number, number]  // Default end
   ];
 };
 
 // Get a predefined highway route
 const getHighwayRoute = (): [number, number][] => {
   return mistissiniHighways[0]?.path || [
-    [50.4230, -73.8640], // Default start
-    [50.4300, -73.8620]  // Default end
+    [50.4230, -73.8640] as [number, number], // Default start
+    [50.4300, -73.8620] as [number, number]  // Default end
   ];
 };
 
@@ -40,14 +40,14 @@ export const initializeRoutes = async (
   const calculatedRoutes: Route[] = [
     {
       id: 'route-1',
-      path: mistissiniStreets.find(street => street.name === "Main Street")?.path || [
+      path: (mistissiniStreets.find(street => street.name === "Main Street")?.path || [
         [50.4215, -73.8760],
         [50.4220, -73.8730],
         [50.4225, -73.8700],
         [50.4230, -73.8670],
         [50.4235, -73.8640],
         [50.4240, -73.8610]
-      ] as [number, number][],
+      ]) as [number, number][],
       status: 'open',
       start: 'Mistissini Center',
       end: 'Eastern Mistissini',
@@ -55,14 +55,14 @@ export const initializeRoutes = async (
     },
     {
       id: 'route-2',
-      path: mistissiniStreets.find(street => street.name === "Saint John Street")?.path || [
+      path: (mistissiniStreets.find(street => street.name === "Saint John Street")?.path || [
         [50.4260, -73.8685],
         [50.4245, -73.8685],
         [50.4230, -73.8685],
         [50.4215, -73.8685],
         [50.4200, -73.8685],
         [50.4185, -73.8685]
-      ] as [number, number][],
+      ]) as [number, number][],
       status: 'congested',
       start: 'Northern Mistissini',
       end: 'Southern Mistissini',
@@ -70,7 +70,7 @@ export const initializeRoutes = async (
     },
     {
       id: 'route-3',
-      path: mistissiniHighways[0].path.slice(0, 10) as [number, number][],
+      path: (mistissiniHighways[0].path.slice(0, 10)) as [number, number][],
       status: 'closed',
       start: 'Mistissini',
       end: 'Chibougamau Highway',
