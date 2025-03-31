@@ -19,26 +19,18 @@ const LOCATIONS: Record<string, [number, number]> = {
   dropose: [50.4153, -73.8748],    // Industrial area coordinates
   hospital: [50.4230, -73.8780],   // Medical facility
   school: [50.4180, -73.8650],     // Local school
-  chibougamau: [49.9166, -74.3694], // Neighboring town
-  madassin: [50.4180, -73.8720],   // Residential area
-  northMistissini: [50.4280, -73.8650] // Northern expansion
+  chibougamau: [49.9166, -74.3694] // Neighboring town
 };
 
 const GRAPHHOPPER_API_KEY = '5adb1e1c-29a2-4293-81c1-1c81779679bb';
 
 // Known road segments in Mistissini (simplified from OSM data)
-const ROAD_SEGMENTS = [
+const ROAD_SEGMENTS: Array<[number, number][]> = [
   // Main roads
   [[50.4221, -73.8683], [50.4230, -73.8670], [50.4235, -73.8650]],
   [[50.4221, -73.8683], [50.4210, -73.8690], [50.4200, -73.8700]],
   // Connection to dropose area
-  [[50.4200, -73.8700], [50.4175, -73.8720], [50.4153, -73.8748]],
-  // Northern roads
-  [[50.4221, -73.8683], [50.4240, -73.8670], [50.4260, -73.8660], [50.4280, -73.8650]],
-  // Route to hospital
-  [[50.4221, -73.8683], [50.4225, -73.8710], [50.4230, -73.8740], [50.4230, -73.8780]],
-  // School roads
-  [[50.4221, -73.8683], [50.4200, -73.8670], [50.4180, -73.8650]]
+  [[50.4200, -73.8700], [50.4175, -73.8720], [50.4153, -73.8748]]
 ];
 
 const EvacuationMap = () => {
@@ -71,118 +63,20 @@ const EvacuationMap = () => {
       
       if (data.paths?.[0]?.points?.coordinates) {
         return data.paths[0].points.coordinates.map(
-          ([lng, lat]: [number, number]) => [lat, lng]
-        ) as [number, number][];
+          ([lng, lat]: [number, number]) => [lat, lng] as [number, number]
+        );
       }
       
-      // If GraphHopper API fails, use a more detailed road-following algorithm
-      return followRoadSegments(snappedStart, snappedEnd);
+      return [start, end]; // Fallback
     } catch (error) {
       console.error('Routing error:', error);
-      // Advanced fallback using road segments
-      return followRoadSegments(start, end);
+      return [start, end]; // Fallback
     }
-  }, []);
-
-  // More sophisticated road following algorithm
-  const followRoadSegments = useCallback((start: [number, number], end: [number, number]): [number, number][] => {
-    // Find closest road segments to start and end points
-    const startSegment = findClosestSegment(start);
-    const endSegment = findClosestSegment(end);
-    
-    if (startSegment === endSegment && startSegment !== -1) {
-      // If on same road segment, return points along that segment
-      return interpolatePointsAlongSegment(
-        ROAD_SEGMENTS[startSegment], 
-        closestPointOnSegment(start, ROAD_SEGMENTS[startSegment]),
-        closestPointOnSegment(end, ROAD_SEGMENTS[startSegment])
-      );
-    }
-    
-    // For different segments, we need to find a path connecting them
-    // This is a simplified A* pathfinding approximation
-    if (startSegment !== -1 && endSegment !== -1) {
-      // Create a path by connecting road segments
-      const path: [number, number][] = [];
-      
-      // Add points from start to end of start segment
-      path.push(...ROAD_SEGMENTS[startSegment]);
-      
-      // Add connection points between segments (simplified)
-      // In a real implementation, this would use a graph algorithm
-      if (Math.abs(startSegment - endSegment) === 1) {
-        // Directly connected segments
-        path.push(...ROAD_SEGMENTS[endSegment]);
-      } else {
-        // Need to find intermediate segments
-        // Here we just add the central mistissini point as a connector
-        path.push(LOCATIONS.mistissini);
-        path.push(...ROAD_SEGMENTS[endSegment]);
-      }
-      
-      return path;
-    }
-    
-    // Fallback to direct line with intermediate points
-    return [start, LOCATIONS.mistissini, end];
-  }, []);
-
-  // Find the index of the closest road segment to a point
-  const findClosestSegment = useCallback((point: [number, number]): number => {
-    let closestSegmentIndex = -1;
-    let minDistance = Infinity;
-    
-    ROAD_SEGMENTS.forEach((segment, index) => {
-      segment.forEach(roadPoint => {
-        const dist = haversineDistance(
-          point[0], point[1],
-          roadPoint[0], roadPoint[1]
-        );
-        if (dist < minDistance) {
-          minDistance = dist;
-          closestSegmentIndex = index;
-        }
-      });
-    });
-    
-    return closestSegmentIndex;
-  }, []);
-
-  // Find closest point on a road segment to another point
-  const closestPointOnSegment = useCallback((point: [number, number], segment: [number, number][]): number => {
-    let closestPointIndex = 0;
-    let minDistance = Infinity;
-    
-    segment.forEach((segmentPoint, index) => {
-      const dist = haversineDistance(
-        point[0], point[1],
-        segmentPoint[0], segmentPoint[1]
-      );
-      if (dist < minDistance) {
-        minDistance = dist;
-        closestPointIndex = index;
-      }
-    });
-    
-    return closestPointIndex;
-  }, []);
-
-  // Interpolate points along a segment between two indices
-  const interpolatePointsAlongSegment = useCallback((
-    segment: [number, number][],
-    startIdx: number,
-    endIdx: number
-  ): [number, number][] => {
-    if (startIdx > endIdx) {
-      [startIdx, endIdx] = [endIdx, startIdx];
-    }
-    
-    return segment.slice(startIdx, endIdx + 1);
   }, []);
 
   // Snap point to nearest road segment
   const snapToRoad = useCallback((point: [number, number]): [number, number] => {
-    let closestPoint = point;
+    let closestPoint: [number, number] = point;
     let minDistance = Infinity;
 
     ROAD_SEGMENTS.forEach(segment => {
@@ -205,11 +99,9 @@ const EvacuationMap = () => {
   useEffect(() => {
     const initializeRoutes = async () => {
       const routeDefinitions = [
-        { id: 'mistissini-dropose', start: 'mistissini', end: 'dropose', color: '#22c55e' },
-        { id: 'dropose-hospital', start: 'dropose', end: 'hospital', color: '#f97316' },
-        { id: 'school-northMistissini', start: 'school', end: 'northMistissini', color: '#ef4444' },
-        { id: 'madassin-hospital', start: 'madassin', end: 'hospital', color: '#3366ff' },
-        { id: 'mistissini-school', start: 'mistissini', end: 'school', color: '#8855cc' }
+        { id: 'mistissini-dropose', start: 'mistissini', end: 'dropose', color: '#3366ff' },
+        { id: 'dropose-hospital', start: 'dropose', end: 'hospital', color: '#ff3333' },
+        { id: 'school-chibougamau', start: 'school', end: 'chibougamau', color: '#33cc33' }
       ];
 
       const calculatedRoutes: Route[] = [];
@@ -222,22 +114,10 @@ const EvacuationMap = () => {
 
         const path = await fetchRoadRoute(startPos, endPos);
         
-        // Set initial status based on the route ID to show different colors
-        let initialStatus: RouteStatus;
-        if (def.id === 'mistissini-dropose') {
-          initialStatus = 'open'; // Green
-        } else if (def.id === 'dropose-hospital') {
-          initialStatus = 'congested'; // Orange
-        } else if (def.id === 'school-northMistissini') {
-          initialStatus = 'closed'; // Red
-        } else {
-          initialStatus = Math.random() < 0.7 ? 'open' : Math.random() < 0.9 ? 'congested' : 'closed';
-        }
-        
         calculatedRoutes.push({
           ...def,
           path,
-          status: initialStatus,
+          status: 'open',
           updatedAt: new Date()
         });
       }
@@ -254,7 +134,7 @@ const EvacuationMap = () => {
     const interval = setInterval(() => {
       setRoutes(prev => prev.map(route => ({
         ...route,
-        status: getRandomStatus(route.status),
+        status: getRandomStatus(),
         updatedAt: new Date()
       })));
     }, 120000);
@@ -262,16 +142,9 @@ const EvacuationMap = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Smart status rotation (tends to stay in current state)
-  const getRandomStatus = (currentStatus: RouteStatus): RouteStatus => {
+  const getRandomStatus = (): RouteStatus => {
     const rand = Math.random();
-    if (currentStatus === 'open') {
-      return rand < 0.8 ? 'open' : rand < 0.95 ? 'congested' : 'closed';
-    } else if (currentStatus === 'congested') {
-      return rand < 0.6 ? 'congested' : rand < 0.9 ? 'open' : 'closed';
-    } else {
-      return rand < 0.7 ? 'closed' : rand < 0.9 ? 'congested' : 'open';
-    }
+    return rand < 0.7 ? 'open' : rand < 0.9 ? 'congested' : 'closed';
   };
 
   if (isLoading) {
@@ -285,14 +158,13 @@ const EvacuationMap = () => {
           key={route.id}
           positions={route.path}
           pathOptions={{
-            color: route.status === "open" ? "#22c55e" : 
-                   route.status === "congested" ? "#f97316" : "#ef4444",
-            weight: 5,
-            opacity: route.status === "closed" ? 0.5 : 0.9,
-            lineCap: "round",
-            lineJoin: "round",
-            dashArray: route.status === "closed" ? "10, 10" : 
-                       route.status === "congested" ? "15, 5" : undefined
+            color: route.color,
+            weight: 6,
+            opacity: 0.9,
+            lineCap: 'round',
+            lineJoin: 'round',
+            dashArray: route.status === 'closed' ? '10, 6' : 
+                      route.status === 'congested' ? '20, 5' : undefined
           }}
         >
           <Popup>
