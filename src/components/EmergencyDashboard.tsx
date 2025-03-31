@@ -1,71 +1,72 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
-import { MapPin, AlertTriangle } from "lucide-react";
+import { MapPin, AlertTriangle, Clock } from "lucide-react";
+import { useEvacuationRoutes } from '@/hooks/useEvacuationRoutes';
+import { Route } from '@/types/mapTypes';
+import { mockDataService } from '@/services/mockDataService';
+
+// Shared status configuration
+const statusConfig = {
+  open: { 
+    display: "OPEN", 
+    color: "#22c55e", 
+    panelClass: "bg-green-500/10 text-green-500 hover:bg-green-500/20",
+    mapOptions: { color: "#22c55e", weight: 6 }
+  },
+  congested: { 
+    display: "CONGESTED", 
+    color: "#f97316", 
+    panelClass: "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20",
+    mapOptions: { color: "#f97316", weight: 6, dashArray: "5, 5" }
+  },
+  closed: { 
+    display: "CLOSED", 
+    color: "#ef4444", 
+    panelClass: "bg-red-500/10 text-red-500 hover:bg-red-500/20",
+    mapOptions: { color: "#ef4444", weight: 6, dashArray: "10, 6" }
+  }
+};
 
 const EmergencyDashboard = () => {
-  // Sample data - updated to match the rest of the application
-  const activeRoutes = [
-    {
-      name: "Main Street → Saint John Street",
-      status: "open",
-      distance: "3.2 km",
-      updated: "13:50",
-      color: "text-green-500"
-    },
-    {
-      name: "Mistissini → Chibougamau",
-      status: "congested",
-      distance: "78.5 km",
-      updated: "13:30",
-      color: "text-yellow-500"
-    },
-    {
-      name: "Dropose Industrial Zone → Hospital",
-      status: "closed",
-      distance: "5.7 km",
-      updated: "13:15",
-      color: "text-red-500"
-    }
-  ];
+  // Use the evacuation routes from the mock data service
+  const [mapData, setMapData] = useState(mockDataService.getInitialData());
+  const { computedRoutes, isLoading } = useEvacuationRoutes(mapData.evacuationRoutes);
+  
+  // Update data every 2 minutes
+  useEffect(() => {
+    const updateInterval = setInterval(() => {
+      const updatedData = mockDataService.getUpdatedData();
+      setMapData(updatedData);
+    }, 120000); // 120000 ms = 2 minutes
+    
+    return () => clearInterval(updateInterval);
+  }, []);
 
-  // Function to get the appropriate color based on status
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'open':
-        return 'text-green-500 bg-green-50';
-      case 'congested':
-        return 'text-amber-500 bg-amber-50';
-      case 'closed':
-        return 'text-red-500 bg-red-50';
-      default:
-        return 'text-blue-500 bg-blue-50';
-    }
+  // Format time for display
+  const formatUpdateTime = (date: Date) => {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Function to get badge variant based on status
-  const getBadgeVariant = (status) => {
-    switch (status) {
-      case 'open':
-        return 'bg-green-500/10 text-green-500 hover:bg-green-500/20';
-      case 'congested':
-        return 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20';
-      case 'closed':
-        return 'bg-red-500/10 text-red-500 hover:bg-red-500/20';
-      default:
-        return 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20';
-    }
+  // Calculate and format distance
+  const formatDistance = (distance: number) => {
+    return `${distance.toFixed(1)} km`;
   };
 
   return (
     <div className="p-4 bg-white rounded-lg shadow">
-      {/* Existing sections remain unchanged */}
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Forest Fire Response System</h1>
+        <div className="flex space-x-3">
+          <span className="px-2 py-1 bg-red-500 text-white rounded-full text-sm animate-pulse">LIVE</span>
+          <span className="px-2 py-1 bg-slate-200 rounded-full text-sm">
+            {new Date().toLocaleString()}
+          </span>
+        </div>
+      </div>
+      
+      {/* Forest Fire Zones - unchanged */}
       <h2 className="text-xl font-bold mb-4">Forest Fire Zones</h2>
-      <div className="mb-6">Responders</div>
-      
-      <h2 className="text-xl font-bold mb-4">Safe Routes</h2>
-      
-      {/* Emergency Alerts - unchanged */}
       <div className="mb-6">
         <h3 className="font-bold mb-2">Emergency Alerts</h3>
         <div className="flex items-center mb-1">
@@ -115,28 +116,7 @@ const EmergencyDashboard = () => {
           Evacuation Routes
         </h3>
         
-        {activeRoutes.length > 0 ? (
-          <div className="space-y-3">
-            {activeRoutes.map((route, index) => (
-              <div key={index} className="bg-white border border-slate-200 rounded-md shadow-sm p-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="font-medium">{route.name}</div>
-                    <div className="flex justify-between text-sm text-slate-500 mt-1">
-                      <span>{route.distance}</span>
-                      <span>Updated: {route.updated}</span>
-                    </div>
-                  </div>
-                  <Badge 
-                    className={`ml-2 ${getBadgeVariant(route.status)}`}
-                  >
-                    {route.status.toUpperCase()}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
+        {isLoading ? (
           <div className="text-center py-8 text-slate-500 bg-slate-100/50 rounded-md">
             <div className="flex justify-center mb-2">
               <svg className="animate-spin h-6 w-6 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -145,6 +125,44 @@ const EmergencyDashboard = () => {
               </svg>
             </div>
             <div>Calculating evacuation routes...</div>
+          </div>
+        ) : computedRoutes.length > 0 ? (
+          <div className="space-y-3">
+            {computedRoutes.map((route) => (
+              <div key={route.id} className="bg-white border border-slate-200 rounded-md shadow-sm p-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="font-medium">{route.start} → {route.end}</div>
+                    <div className="flex justify-between text-sm text-slate-500 mt-1">
+                      <span>{formatDistance(parseFloat(route.path.length.toString()))}</span>
+                      <span className="flex items-center">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {formatUpdateTime(route.updatedAt)}
+                      </span>
+                    </div>
+                  </div>
+                  <Badge 
+                    className={`ml-2 ${statusConfig[route.status].panelClass}`}
+                  >
+                    {statusConfig[route.status].display}
+                  </Badge>
+                </div>
+                {route.status === 'closed' && (
+                  <div className="text-xs bg-red-50 p-2 mt-2 rounded text-red-800">
+                    <span className="font-medium">⚠️ Warning:</span> This route is currently closed. Please use alternative routes.
+                  </div>
+                )}
+                {route.status === 'congested' && (
+                  <div className="text-xs bg-amber-50 p-2 mt-2 rounded text-amber-800">
+                    <span className="font-medium">⚠️ Note:</span> Heavy traffic - expect delays. Consider alternative routes if available.
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-4 text-slate-500">
+            No active evacuation routes
           </div>
         )}
         

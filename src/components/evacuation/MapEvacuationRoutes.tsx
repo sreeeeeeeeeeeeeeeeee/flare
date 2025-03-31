@@ -31,16 +31,12 @@ const MapEvacuationRoutes: React.FC<MapEvacuationRoutesProps> = ({ routes, isLoa
           }}
         >
           <Popup className="route-popup">
-            <h4>{route.id}</h4>
+            <h4>{route.start} → {route.end}</h4>
             <div className="route-meta">
               <span className={`status-badge ${route.status}`}>
                 {route.status.toUpperCase()}
               </span>
               <span>{calculateDistance(route.path).toFixed(1)} km</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground text-xs">From:</span> {route.start}<br/>
-              <span className="text-muted-foreground text-xs">To:</span> {route.end}
             </div>
             <div className="route-updated">
               Updated: {route.updatedAt.toLocaleTimeString()}

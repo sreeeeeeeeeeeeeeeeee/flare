@@ -4,6 +4,7 @@ import { Route } from '@/types/mapTypes';
 import { Badge } from '@/components/ui/badge';
 import { calculateDistance } from '@/utils/mapUtils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Clock } from 'lucide-react';
 
 interface StandaloneEvacuationRoutesProps {
   routes: Route[];
@@ -28,6 +29,11 @@ const StandaloneEvacuationRoutes: React.FC<StandaloneEvacuationRoutesProps> = ({
     }
   };
 
+  // Format update time
+  const formatUpdateTime = (date: Date) => {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
     <div className="p-4 rounded-lg border border-border">
       <h3 className="text-lg font-medium mb-2">Evacuation Routes</h3>
@@ -44,23 +50,54 @@ const StandaloneEvacuationRoutes: React.FC<StandaloneEvacuationRoutesProps> = ({
       ) : (
         <div className="space-y-2">
           {routes.map((route) => (
-            <div key={`standalone-${route.id}`} className="p-2 bg-card rounded flex justify-between items-center">
-              <div>
-                <div className="font-medium">{route.start} → {route.end}</div>
-                <div className="text-xs text-muted-foreground">
-                  Distance: {calculateDistance(route.path).toFixed(1)} km
+            <div key={`standalone-${route.id}`} className="p-3 bg-card rounded-md border border-border">
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="font-medium">{route.start} → {route.end}</div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
+                    <span>Distance: {calculateDistance(route.path).toFixed(1)} km</span>
+                    <span className="flex items-center">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {formatUpdateTime(route.updatedAt)}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-xs">
-                  Updated: {route.updatedAt.toLocaleTimeString()}
-                </div>
+                <Badge variant={getStatusBadgeVariant(route.status)}>
+                  {route.status.toUpperCase()}
+                </Badge>
               </div>
-              <Badge variant={getStatusBadgeVariant(route.status)}>
-                {route.status.toUpperCase()}
-              </Badge>
+              
+              {route.status === 'closed' && (
+                <div className="text-xs bg-red-50 p-2 mt-2 rounded text-red-800">
+                  <span className="font-medium">⚠️ Warning:</span> This route is currently closed. Please use alternative routes.
+                </div>
+              )}
+              {route.status === 'congested' && (
+                <div className="text-xs bg-amber-50 p-2 mt-2 rounded text-amber-800">
+                  <span className="font-medium">⚠️ Note:</span> Heavy traffic - expect delays. Consider alternatives if available.
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
+      
+      {/* Status legend */}
+      <div className="mt-4 flex flex-wrap gap-3 bg-card/50 p-2 rounded border border-border text-xs">
+        <div className="font-medium text-muted-foreground mr-1">Route Status:</div>
+        <div className="flex items-center">
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500 mr-1.5"></div>
+          <span>Open</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1.5"></div>
+          <span>Congested</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500 mr-1.5"></div>
+          <span>Closed</span>
+        </div>
+      </div>
     </div>
   );
 };
