@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for map calculations and data transformations
  */
@@ -22,6 +21,12 @@ export const calculateDistance = (path: [number, number][]) => {
     total += haversineDistance(path[i-1][0], path[i-1][1], path[i][0], path[i][1]);
   }
   return total;
+};
+
+// Format distance in a user-friendly way
+export const formatDistance = (path: [number, number][]): string => {
+  const distance = calculateDistance(path);
+  return `${distance.toFixed(1)} km`;
 };
 
 // Precise coordinates for Mistissini verified with OpenStreetMap
