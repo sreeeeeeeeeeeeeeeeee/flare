@@ -14,10 +14,14 @@ const fixedEvacuationRoutes = [
     status: 'open',
     startPoint: 'Mistissini Center',
     endPoint: 'Eastern Mistissini',
+    estimatedTime: 5, // Added required field in minutes
+    transportMethods: ['car', 'emergency'] as Array<'car' | 'foot' | 'emergency'>, // Added required field
     geometry: {
       type: 'LineString',
       coordinates: [
-        [-73.8700, 50.4220],
+        [-73.8760, 50.4215],
+        [-73.8730, 50.4220],
+        [-73.8700, 50.4225],
         [-73.8670, 50.4230],
         [-73.8640, 50.4235],
         [-73.8610, 50.4240]
@@ -30,6 +34,8 @@ const fixedEvacuationRoutes = [
     status: 'congested',
     startPoint: 'Northern Mistissini',
     endPoint: 'Southern Mistissini',
+    estimatedTime: 8, // Added required field in minutes
+    transportMethods: ['car', 'foot', 'emergency'] as Array<'car' | 'foot' | 'emergency'>, // Added required field
     geometry: {
       type: 'LineString',
       coordinates: [
@@ -37,7 +43,8 @@ const fixedEvacuationRoutes = [
         [-73.8685, 50.4245],
         [-73.8685, 50.4230],
         [-73.8685, 50.4215],
-        [-73.8685, 50.4200]
+        [-73.8685, 50.4200],
+        [-73.8685, 50.4185]
       ]
     }
   },
@@ -47,6 +54,8 @@ const fixedEvacuationRoutes = [
     status: 'closed',
     startPoint: 'Mistissini',
     endPoint: 'Chibougamau Highway',
+    estimatedTime: 15, // Added required field in minutes
+    transportMethods: ['car', 'emergency'] as Array<'car' | 'foot' | 'emergency'>, // Added required field
     geometry: {
       type: 'LineString',
       coordinates: [

@@ -40,8 +40,10 @@ export const initializeRoutes = async (
   const calculatedRoutes: Route[] = [
     {
       id: 'route-1',
-      path: [
-        [50.4220, -73.8700],
+      path: mistissiniStreets.find(street => street.name === "Main Street")?.path || [
+        [50.4215, -73.8760],
+        [50.4220, -73.8730],
+        [50.4225, -73.8700],
         [50.4230, -73.8670],
         [50.4235, -73.8640],
         [50.4240, -73.8610]
@@ -53,12 +55,13 @@ export const initializeRoutes = async (
     },
     {
       id: 'route-2',
-      path: [
+      path: mistissiniStreets.find(street => street.name === "Saint John Street")?.path || [
         [50.4260, -73.8685],
         [50.4245, -73.8685],
         [50.4230, -73.8685],
         [50.4215, -73.8685],
-        [50.4200, -73.8685]
+        [50.4200, -73.8685],
+        [50.4185, -73.8685]
       ],
       status: 'congested',
       start: 'Northern Mistissini',
