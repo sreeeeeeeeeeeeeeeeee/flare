@@ -128,7 +128,7 @@ const findStreetRoute = (start: [number, number], end: [number, number]): [numbe
   
   // If we found both streets and they're the same, use that street's path
   if (nearStartStreet && nearEndStreet && nearStartStreet.name === nearEndStreet.name) {
-    return nearStartStreet.path;
+    return nearStartStreet.path as [number, number][];
   }
   
   // Otherwise use actual streets as much as possible for the route
@@ -146,7 +146,7 @@ const findStreetRoute = (start: [number, number], end: [number, number]): [numbe
     
     if (startPathIndex !== -1) {
       // Add the rest of the path after this point
-      route.push(...nearStartStreet.path.slice(startPathIndex));
+      route.push(...(nearStartStreet.path.slice(startPathIndex) as [number, number][]));
     }
   }
   
@@ -177,7 +177,7 @@ const findStreetRoute = (start: [number, number], end: [number, number]): [numbe
     });
     
     if (connectingStreets.length > 0) {
-      route.push(...connectingStreets[0].path);
+      route.push(...(connectingStreets[0].path as [number, number][]));
     }
   }
   
@@ -193,7 +193,7 @@ const findStreetRoute = (start: [number, number], end: [number, number]): [numbe
     
     if (endPathIndex !== -1) {
       // Add the path up to this point
-      route.push(...nearEndStreet.path.slice(0, endPathIndex + 1));
+      route.push(...(nearEndStreet.path.slice(0, endPathIndex + 1) as [number, number][]));
     }
   }
   
@@ -270,19 +270,19 @@ const fetchRoute = async (
     }
     
     // If API fails, create a direct route following streets where possible
-    const directRoute = [startPoint];
+    const directRoute: [number, number][] = [startPoint];
     
     const midPoints = [...mistissiniStreets, ...mistissiniHighways].reduce((points, street) => {
       // Add some points from streets that might be on the way
       const isRelevant = street.path.some(p => {
-        const distanceToLine = distancePointToLine(p, startPoint, endPoint);
+        const distanceToLine = distancePointToLine(p as [number, number], startPoint, endPoint);
         return distanceToLine < 0.003; // Only use streets close to direct line
       });
       
       if (isRelevant) {
-        points.push(...street.path.filter(p => 
-          distancePointToLine(p, startPoint, endPoint) < 0.003
-        ));
+        points.push(...(street.path.filter(p => 
+          distancePointToLine(p as [number, number], startPoint, endPoint) < 0.003
+        ) as [number, number][]));
       }
       
       return points;
@@ -305,7 +305,7 @@ const fetchRoute = async (
     console.error("Error fetching route:", error);
     
     // Last fallback: simple direct route
-    const fallbackRoute = [startPoint, endPoint];
+    const fallbackRoute: [number, number][] = [startPoint, endPoint];
     routeCache[cacheKey] = fallbackRoute;
     return fallbackRoute;
   }
@@ -359,7 +359,7 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
       // First create routes from provided geometry
       const baseRoutes = routes.map(route => ({
         id: route.id,
-        path: route.geometry.coordinates.map(([lng, lat]) => [lat, lng]) as [number, number][],
+        path: route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]),
         status: route.status,
         routeName: route.routeName || `Route ${route.id}`,
         startPoint: route.startPoint,
@@ -384,7 +384,7 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
               
               enhancedRoutes.push({
                 id: route.id,
-                path: path as [number, number][],
+                path: path,
                 status: route.status,
                 routeName: route.routeName || `Route ${route.id}`,
                 startPoint: route.startPoint,
