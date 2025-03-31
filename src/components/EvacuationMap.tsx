@@ -1,6 +1,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Polyline, Popup } from 'react-leaflet';
+import { Badge } from '@/components/ui/badge';
 
 type RouteStatus = 'open' | 'congested' | 'closed';
 type Route = {
@@ -160,12 +161,45 @@ const EvacuationMap = () => {
     }
   };
 
+  // Get status badge style
+  const getStatusBadgeVariant = (status: RouteStatus): "default" | "secondary" | "destructive" | "outline" => {
+    switch (status) {
+      case 'open':
+        return 'default';
+      case 'congested':
+        return 'secondary';
+      case 'closed':
+        return 'destructive';
+      default:
+        return 'default';
+    }
+  };
+
   if (isLoading) {
     return <div className="loading">Calculating precise road routes...</div>;
   }
 
   return (
     <>
+      {/* Status Legend */}
+      <div className="absolute top-2 right-2 z-[1000] bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-md border border-border">
+        <div className="text-xs font-semibold mb-1">Route Status:</div>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-[#22c55e]"></div>
+            <span className="text-xs">Open</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-[#f97316]"></div>
+            <span className="text-xs">Congested</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-[#ef4444]"></div>
+            <span className="text-xs">Closed</span>
+          </div>
+        </div>
+      </div>
+
       {routes.map(route => (
         <Polyline
           key={route.id}
@@ -184,9 +218,9 @@ const EvacuationMap = () => {
             <div className="route-popup">
               <h4>{route.start} → {route.end}</h4>
               <div className="route-meta">
-                <span className={`status-badge ${route.status}`}>
+                <Badge variant={getStatusBadgeVariant(route.status)} className="text-xs">
                   {route.status.toUpperCase()}
-                </span>
+                </Badge>
                 <span>{calculateDistance(route.path).toFixed(1)} km</span>
               </div>
               <div className="route-updated">
