@@ -36,7 +36,7 @@ const UserDashboard = () => {
       const convertedRoutes = mapData.evacuationRoutes.map(route => ({
         id: route.id,
         path: route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]),
-        status: route.status === 'active' ? 'open' : route.status as 'open' | 'congested' | 'closed',
+        status: route.status as 'open' | 'congested' | 'closed', // Fixed TypeScript error here
         start: route.startPoint,
         end: route.endPoint,
         updatedAt: new Date()
