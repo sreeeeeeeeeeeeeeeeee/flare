@@ -128,47 +128,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
         </Popup>
       </Marker>
       
-      {/* First show all streets as reference (thin gray lines) */}
-      {mistissiniStreets.map((street) => (
-        <Polyline
-          key={`street-base-${street.name}`}
-          positions={street.path as [number, number][]}
-          pathOptions={{
-            color: '#94a3b8',
-            weight: 2.5,
-            opacity: 0.65,
-            dashArray: '4, 4',
-            lineJoin: 'round',
-            lineCap: 'round'
-          }}
-        >
-          <Popup>
-            <div className="text-sm font-medium">{street.name}</div>
-            <div className="text-xs">{street.description}</div>
-          </Popup>
-        </Polyline>
-      ))}
-      
-      {/* Then show all highways as reference */}
-      {mistissiniHighways.map((highway) => (
-        <Polyline
-          key={`highway-base-${highway.name}`}
-          positions={highway.path as [number, number][]}
-          pathOptions={{
-            color: '#64748b',
-            weight: 3.5,
-            opacity: 0.5,
-            dashArray: '8, 6',
-            lineJoin: 'round',
-            lineCap: 'round'
-          }}
-        >
-          <Popup>
-            <div className="text-sm font-medium">{highway.name}</div>
-            <div className="text-xs">{highway.description}</div>
-          </Popup>
-        </Polyline>
-      ))}
+      {/* The gray dotted lines for streets and highways have been removed */}
       
       {/* Use GraphHopper API to generate evacuation routes - explicitly set standalone to false */}
       <EvacuationRoutes routes={data.evacuationRoutes} standalone={false} />
