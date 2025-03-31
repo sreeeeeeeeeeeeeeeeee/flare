@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+import { MapContainer, TileLayer } from 'react-leaflet';
 import { Route } from '@/types/mapTypes';
 import { LOCATIONS } from '@/utils/mapUtils';
 import { getRandomStatus } from '@/utils/mapUtils';
@@ -42,7 +43,12 @@ const EvacuationMap = () => {
   }, []);
 
   if (isLoading) {
-    return <div className="loading">Calculating precise road routes...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <div className="loading text-lg mb-2">Calculating precise road routes...</div>
+        <RouteStatusLegend />
+      </div>
+    );
   }
 
   return (
