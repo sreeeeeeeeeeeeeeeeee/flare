@@ -4,6 +4,9 @@ import { mistissiniLocation, mistissiniRegions, mistissiniForestRegions, evacuat
 // Updated YouTube video link
 const droneVideo = 'http://youtu.be/WHBClgDSPd0';
 
+// GraphHopper API key
+const GRAPHHOPPER_API_KEY = "5adb1e1c-29a2-4293-81c1-1c81779679bb";
+
 // Generate a much smaller forest fire zone around Mistissini
 const generateForestFireZone = (nearRegion: number, id: string): DangerZoneType => {
   const region = mistissiniRegions[nearRegion];
@@ -104,7 +107,7 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
     }
   ];
   
-  // Create evacuation routes for each selected street
+  // Create evacuation routes for each selected street - ensuring stable paths
   streetsToUse.forEach((streetName, index) => {
     const street = mistissiniStreets.find(s => s.name === streetName);
     
@@ -141,6 +144,10 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
         endPoint = `${street.name} End`;
       }
       
+      // Use the street's path directly for stable rendering
+      // Convert path coordinates to the format expected by GeoJSON (lng, lat)
+      const coordinates = street.path.map(point => [point[1], point[0]]);
+      
       routes.push({
         id: `route-street-${index + 1}`,
         startPoint,
@@ -151,7 +158,7 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
         routeName: street.name,
         geometry: {
           type: 'LineString',
-          coordinates: street.path.map(point => [point[1], point[0]])
+          coordinates
         }
       });
     }
@@ -162,21 +169,27 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
     const status = Math.random() > 0.7 ? "congested" : "open";
     const estimatedTime = 5 + Math.floor(Math.random() * 15); // 5-20 minutes
     
-    routes.push({
-      id: `route-combined-${index + 1}`,
-      startPoint: route.startPoint,
-      endPoint: route.endPoint,
-      status,
-      estimatedTime,
-      transportMethods: ['car', 'emergency', 'foot'],
-      routeName: route.name,
-      // The geometry is based on the combined route streets
-      // But for rendering we'll use the matching street paths
-      geometry: {
-        type: 'LineString',
-        coordinates: [] // Empty as we'll use street.path for rendering instead
-      }
-    });
+    // Find the first street mentioned in the route to use its path
+    const primaryStreet = mistissiniStreets.find(s => s.name === route.streets[0]);
+    
+    if (primaryStreet) {
+      // Use the primary street's path for stability
+      const coordinates = primaryStreet.path.map(point => [point[1], point[0]]);
+      
+      routes.push({
+        id: `route-combined-${index + 1}`,
+        startPoint: route.startPoint,
+        endPoint: route.endPoint,
+        status,
+        estimatedTime,
+        transportMethods: ['car', 'emergency', 'foot'],
+        routeName: route.name,
+        geometry: {
+          type: 'LineString',
+          coordinates
+        }
+      });
+    }
   });
   
   return routes;
@@ -186,7 +199,7 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
 const generateHighwayEvacuationRoutes = (): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
   
-  // Create evacuation routes for each highway
+  // Create evacuation routes for each highway with stable paths
   mistissiniHighways.forEach((highway, index) => {
     // Get the destination from the highway name or description
     let destination = highway.name;
@@ -195,6 +208,9 @@ const generateHighwayEvacuationRoutes = (): EvacuationRouteType[] => {
     } else if (highway.description.includes("to ")) {
       destination = highway.description.split("to ")[1].trim();
     }
+    
+    // Convert path coordinates to GeoJSON format (lng, lat)
+    const coordinates = highway.path.map(point => [point[1], point[0]]);
     
     routes.push({
       id: `route-highway-${index + 1}`,
@@ -206,7 +222,7 @@ const generateHighwayEvacuationRoutes = (): EvacuationRouteType[] => {
       routeName: highway.name,
       geometry: {
         type: 'LineString',
-        coordinates: highway.path.map(point => [point[1], point[0]])
+        coordinates
       }
     });
   });

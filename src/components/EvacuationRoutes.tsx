@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Polyline, Popup } from "react-leaflet";
 import { EvacuationRouteType } from "@/types/emergency";
@@ -18,6 +19,9 @@ interface EvacuationRoutesProps {
   standalone?: boolean;
 }
 
+// Graphhopper API key
+const API_KEY = "5adb1e1c-29a2-4293-81c1-1c81779679bb";
+
 const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps) => {
   const [computedRoutes, setComputedRoutes] = useState<RouteCoordinates[]>([]);
   
@@ -26,7 +30,7 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
     if (!standalone) {
       console.log("Processing evacuation routes:", routes.length);
       
-      // Process the routes synchronously without API calls
+      // Process the routes using the existing geometry without API calls for stability
       const processRoutes = () => {
         const newRoutes = routes.map((route) => {
           try {
