@@ -42,16 +42,25 @@ const EvacuationMap = () => {
     ];
 
     const loadRoutes = async () => {
-      // Initialize routes with their fixed statuses
-      const calculatedRoutes = await initializeRoutes(routeDefinitions, LOCATIONS);
-      
-      // Override the statuses to ensure they match exactly what we defined
-      calculatedRoutes[0].status = 'open';
-      calculatedRoutes[1].status = 'congested';
-      calculatedRoutes[2].status = 'closed';
-      
-      setRoutes(calculatedRoutes);
-      setIsLoading(false);
+      try {
+        // Initialize routes with their fixed statuses
+        const calculatedRoutes = await initializeRoutes(routeDefinitions, LOCATIONS);
+        
+        if (calculatedRoutes && calculatedRoutes.length > 0) {
+          // Override the statuses to ensure they match exactly what we defined
+          calculatedRoutes[0].status = 'open';
+          calculatedRoutes[1].status = 'congested';
+          calculatedRoutes[2].status = 'closed';
+          
+          setRoutes(calculatedRoutes);
+        } else {
+          console.error("Failed to initialize routes - no routes returned");
+        }
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error loading routes:", error);
+        setIsLoading(false);
+      }
     };
 
     loadRoutes();
@@ -61,6 +70,7 @@ const EvacuationMap = () => {
 
   // If we're not inside a MapContainer, show a standalone placeholder instead
   if (!isInMapContainer) {
+    console.log("EvacuationMap: Not rendering map elements because we're not in a MapContainer");
     return (
       <div className="relative h-full w-full bg-gray-900 rounded-md overflow-hidden flex flex-col">
         <div className="p-4 bg-gray-800 text-white font-semibold">Evacuation Routes</div>
@@ -72,39 +82,20 @@ const EvacuationMap = () => {
   }
 
   return (
-    <div className="relative h-full w-full bg-gray-900 rounded-md overflow-hidden flex flex-col">
+    <>
       {/* Always show the legend */}
-      <div className="p-4 bg-gray-800 text-white font-semibold">Evacuation Routes</div>
-      
-      <div className="relative flex-grow min-h-[200px]">
-        {/* Loading state with placeholder */}
-        {isLoading ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/70 p-4">
-            <div className="mb-6 text-white/80">Calculating evacuation routes...</div>
-            <Skeleton className="w-[80%] h-6 mb-2" />
-            <Skeleton className="w-[60%] h-6 mb-2" />
-            <Skeleton className="w-[70%] h-6" />
-            
-            {/* Show the legend even during loading */}
-            <div className="absolute bottom-4 right-4 z-10">
-              <RouteStatusLegend />
-            </div>
-          </div>
-        ) : (
-          /* Render routes when available */
-          routes.map(route => (
-            <RoutePolyline key={route.id} route={route} />
-          ))
-        )}
-        
-        {/* If not loading, show the legend in normal position */}
-        {!isLoading && (
-          <div className="absolute top-2 right-2 z-10">
-            <RouteStatusLegend />
-          </div>
-        )}
+      <div className="absolute top-2 right-2 z-10">
+        <RouteStatusLegend />
       </div>
-    </div>
+      
+      {/* Loading state */}
+      {isLoading && <LoadingOverlay />}
+      
+      {/* Render routes when available */}
+      {!isLoading && routes.map(route => (
+        <RoutePolyline key={route.id} route={route} />
+      ))}
+    </>
   );
 };
 

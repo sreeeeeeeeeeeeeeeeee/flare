@@ -21,10 +21,18 @@ export const generateInitialData = (): MapDataType => {
   const initialVideoFeeds = generateInitialVideoFeeds();
   
   // Generate our fixed evacuation routes (2 street routes, 1 highway route)
-  const allEvacuationRoutes = [
-    ...generateStreetEvacuationRoutes(),
-    ...generateHighwayEvacuationRoutes()
-  ];
+  const streetRoutes = generateStreetEvacuationRoutes();
+  const highwayRoutes = generateHighwayEvacuationRoutes();
+  
+  // Combine and ensure correct statuses
+  const allEvacuationRoutes = [...streetRoutes, ...highwayRoutes];
+  
+  // Double-check statuses are set correctly
+  if (allEvacuationRoutes.length >= 3) {
+    allEvacuationRoutes[0].status = 'open';
+    allEvacuationRoutes[1].status = 'congested';
+    allEvacuationRoutes[2].status = 'closed';
+  }
   
   return {
     responders: initialResponders,

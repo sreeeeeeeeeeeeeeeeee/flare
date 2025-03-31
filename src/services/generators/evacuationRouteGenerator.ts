@@ -18,7 +18,7 @@ export const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
       id: 'route-street-1',
       startPoint: 'Lake Shore',
       endPoint: 'Eastern Mistissini',
-      status: 'open',
+      status: 'open', // ALWAYS OPEN
       estimatedTime: 8,
       transportMethods: ['car', 'emergency', 'foot'],
       routeName: openStreet.name,
@@ -36,7 +36,7 @@ export const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
       id: 'route-congested-1',
       startPoint: 'Danger Zone 1',
       endPoint: 'Community Center',
-      status: 'congested',
+      status: 'congested', // ALWAYS CONGESTED
       estimatedTime: 15,
       transportMethods: ['car', 'emergency', 'foot'],
       routeName: `${congestedStreet.name} Evacuation Route`,
@@ -65,7 +65,7 @@ export const generateHighwayEvacuationRoutes = (): EvacuationRouteType[] => {
       id: 'route-highway-closed',
       startPoint: 'Mistissini',
       endPoint: 'Chibougamau',
-      status: 'closed',
+      status: 'closed', // ALWAYS CLOSED
       estimatedTime: 35,
       transportMethods: ['car', 'emergency'],
       routeName: mainHighway.name,

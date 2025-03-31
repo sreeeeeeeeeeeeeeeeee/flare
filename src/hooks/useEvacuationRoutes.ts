@@ -1,5 +1,5 @@
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Route } from '@/types/mapTypes';
 import { EvacuationRouteType } from '@/types/emergency';
 import { 
@@ -15,27 +15,7 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
   const isProcessingRef = useRef(false);
   const routesRef = useRef(routes);
   
-  useEffect(() => {
-    routesRef.current = routes;
-    
-    const baseRoutes: Route[] = routes.map(route => ({
-      id: route.id,
-      path: route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]),
-      status: route.status,
-      start: route.startPoint,
-      end: route.endPoint,
-      updatedAt: new Date()
-    }));
-    
-    if (isMountedRef.current) {
-      setComputedRoutes(baseRoutes);
-      // Set loading to false since we have base routes ready
-      setIsLoading(false);
-    }
-  }, [routes]);
-
-  // Removed auto-updates since we want static route statuses
-
+  // Move this useCallback before the useEffect that depends on it
   const calculateRoutes = useCallback(async () => {
     if (isProcessingRef.current) return;
     
@@ -96,6 +76,25 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
       isProcessingRef.current = false;
     }
   }, [computedRoutes]);
+
+  useEffect(() => {
+    routesRef.current = routes;
+    
+    const baseRoutes: Route[] = routes.map(route => ({
+      id: route.id,
+      path: route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]),
+      status: route.status,
+      start: route.startPoint,
+      end: route.endPoint,
+      updatedAt: new Date()
+    }));
+    
+    if (isMountedRef.current) {
+      setComputedRoutes(baseRoutes);
+      // Set loading to false since we have base routes ready
+      setIsLoading(false);
+    }
+  }, [routes]);
 
   useEffect(() => {
     isMountedRef.current = true;
