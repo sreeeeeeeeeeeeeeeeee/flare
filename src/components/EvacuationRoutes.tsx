@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Polyline, Popup } from "react-leaflet";
 import { EvacuationRouteType } from "@/types/emergency";
+import { mistissiniStreets, mistissiniHighways, evacuationDestinations } from "@/services/mistissiniData";
 
 type RouteCoordinates = {
   id: string;
@@ -20,66 +21,6 @@ interface EvacuationRoutesProps {
 }
 
 const API_KEY = "5adb1e1c-29a2-4293-81c1-1c81779679bb";
-
-// Enhanced coordinate extraction with better error handling
-const extractCoordinates = (locationString: string): { lat: number; lng: number } => {
-  // First try to extract coordinates directly from string
-  const coordMatch = locationString.match(/\((-?\d+\.\d+),\s*(-?\d+\.\d+)\)/);
-  if (coordMatch) {
-    return {
-      lat: parseFloat(coordMatch[1]),
-      lng: parseFloat(coordMatch[2])
-    };
-  }
-
-  // Enhanced location mapping with more precise coordinates
-  const locationMap: Record<string, { lat: number; lng: number }> = {
-    'Mistissini': { lat: 50.4221, lng: -73.8683 },
-    'Chibougamau': { lat: 49.9166, lng: -74.3694 },
-    'Ouje-Bougoumou': { lat: 49.9257, lng: -74.8107 },
-    'Waswanipi': { lat: 49.6892, lng: -75.9564 },
-    'Nemaska': { lat: 51.6900, lng: -76.2342 },
-    'Hospital': { lat: 50.4230, lng: -73.8780 },
-    'School': { lat: 50.4210, lng: -73.8730 },
-    'Community Center': { lat: 50.4232, lng: -73.8660 },
-    'Lake Shore': { lat: 50.4150, lng: -73.8900 },
-    'Forest Edge': { lat: 50.4250, lng: -73.8500 },
-    'Eastern Mistissini': { lat: 50.4240, lng: -73.8610 },
-    'Western Mistissini': { lat: 50.4215, lng: -73.8760 },
-    'Northern Mistissini': { lat: 50.4260, lng: -73.8685 },
-    'Southern Mistissini': { lat: 50.4185, lng: -73.8685 },
-    'Central Mistissini': { lat: 50.4225, lng: -73.8685 },
-    'Northern Forest Area': { lat: 50.4300, lng: -73.8720 },
-    'Southern Residential Area': { lat: 50.4165, lng: -73.8730 },
-    'Western Exit': { lat: 50.4190, lng: -73.8815 },
-    'Cultural Center': { lat: 50.4190, lng: -73.8650 },
-    'Western Area': { lat: 50.4140, lng: -73.9350 },
-    'Eastern Shore': { lat: 50.4200, lng: -73.8505 },
-    'Euelsti Street': { lat: 50.4180, lng: -73.8650 },
-    'Amisk Street': { lat: 50.4165, lng: -73.8670 },
-    'Spruce Street': { lat: 50.4200, lng: -73.8570 },
-    'Main Street': { lat: 50.4225, lng: -73.8700 }
-  };
-
-  // Case-insensitive matching
-  const normalizedInput = locationString.toLowerCase();
-  for (const [key, coords] of Object.entries(locationMap)) {
-    if (normalizedInput.includes(key.toLowerCase())) {
-      return coords;
-    }
-  }
-
-  // Default to Mistissini center if no match
-  return { lat: 50.4221, lng: -73.8683 };
-};
-
-// Enhanced route cache with expiration
-const routeCache: Record<string, { path: [number, number][]; timestamp: number }> = {};
-const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-const getCacheKey = (start: { lat: number; lng: number }, end: { lat: number; lng: number }): string => {
-  return `${start.lat.toFixed(6)},${start.lng.toFixed(6)}_${end.lat.toFixed(6)},${end.lng.toFixed(6)}`;
-};
 
 // Lake Mistassini boundary - simplified polygon to define water area
 const lakeMistassiniCoordinates = [
@@ -174,6 +115,90 @@ const filterWaterPoints = (route: [number, number][]): [number, number][] => {
   }
   
   return filteredRoute;
+};
+
+// Enhanced coordinate extraction with better error handling
+const extractCoordinates = (locationString: string): { lat: number; lng: number } => {
+  // First try to extract coordinates directly from string
+  const coordMatch = locationString.match(/\((-?\d+\.\d+),\s*(-?\d+\.\d+)\)/);
+  if (coordMatch) {
+    return {
+      lat: parseFloat(coordMatch[1]),
+      lng: parseFloat(coordMatch[2])
+    };
+  }
+
+  // Check against street names and highways
+  const matchedStreet = [...mistissiniStreets, ...mistissiniHighways].find(street => 
+    locationString.toLowerCase().includes(street.name.toLowerCase())
+  );
+  if (matchedStreet) {
+    // Return the midpoint of the street for better accuracy
+    const midIndex = Math.floor(matchedStreet.path.length / 2);
+    return {
+      lat: matchedStreet.path[midIndex][0],
+      lng: matchedStreet.path[midIndex][1]
+    };
+  }
+
+  // Check against evacuation destinations
+  const matchedDestination = evacuationDestinations.find(dest => 
+    locationString.toLowerCase().includes(dest.name.toLowerCase())
+  );
+  if (matchedDestination) {
+    return {
+      lat: matchedDestination.lat,
+      lng: matchedDestination.lng
+    };
+  }
+
+  // Enhanced location mapping with more precise coordinates
+  const locationMap: Record<string, { lat: number; lng: number }> = {
+    'Mistissini': { lat: 50.4221, lng: -73.8683 },
+    'Chibougamau': { lat: 49.9166, lng: -74.3694 },
+    'Ouje-Bougoumou': { lat: 49.9257, lng: -74.8107 },
+    'Waswanipi': { lat: 49.6892, lng: -75.9564 },
+    'Nemaska': { lat: 51.6900, lng: -76.2342 },
+    'Hospital': { lat: 50.4230, lng: -73.8780 },
+    'School': { lat: 50.4210, lng: -73.8730 },
+    'Community Center': { lat: 50.4232, lng: -73.8660 },
+    'Lake Shore': { lat: 50.4150, lng: -73.8900 },
+    'Forest Edge': { lat: 50.4250, lng: -73.8500 },
+    'Eastern Mistissini': { lat: 50.4240, lng: -73.8610 },
+    'Western Mistissini': { lat: 50.4215, lng: -73.8760 },
+    'Northern Mistissini': { lat: 50.4260, lng: -73.8685 },
+    'Southern Mistissini': { lat: 50.4185, lng: -73.8685 },
+    'Central Mistissini': { lat: 50.4225, lng: -73.8685 },
+    'Northern Forest Area': { lat: 50.4300, lng: -73.8720 },
+    'Southern Residential Area': { lat: 50.4165, lng: -73.8730 },
+    'Western Exit': { lat: 50.4190, lng: -73.8815 },
+    'Cultural Center': { lat: 50.4190, lng: -73.8650 },
+    'Western Area': { lat: 50.4140, lng: -73.9350 },
+    'Eastern Shore': { lat: 50.4200, lng: -73.8505 },
+    'Euelsti Street': { lat: 50.4180, lng: -73.8650 },
+    'Amisk Street': { lat: 50.4165, lng: -73.8670 },
+    'Spruce Street': { lat: 50.4200, lng: -73.8570 },
+    'Main Street': { lat: 50.4225, lng: -73.8700 }
+  };
+
+  // Case-insensitive matching
+  const normalizedInput = locationString.toLowerCase();
+  for (const [key, coords] of Object.entries(locationMap)) {
+    if (normalizedInput.includes(key.toLowerCase())) {
+      return coords;
+    }
+  }
+
+  // Default to Mistissini center if no match
+  return { lat: 50.4221, lng: -73.8683 };
+};
+
+// Enhanced route cache with expiration
+const routeCache: Record<string, { path: [number, number][]; timestamp: number }> = {};
+const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+const getCacheKey = (start: { lat: number; lng: number }, end: { lat: number; lng: number }): string => {
+  return `${start.lat.toFixed(6)},${start.lng.toFixed(6)}_${end.lat.toFixed(6)},${end.lng.toFixed(6)}`;
 };
 
 // Improved route fetching with better error handling, retry logic, and land constraint
@@ -387,8 +412,7 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
             opacity: 0.9,
             lineCap: "round",
             lineJoin: "round",
-            dashArray: route.status === "closed" ? "10, 10" : undefined,
-            smoothFactor: 1
+            dashArray: route.status === "closed" ? "10, 10" : undefined
           }}
         >
           <Popup className="min-w-[200px]">
