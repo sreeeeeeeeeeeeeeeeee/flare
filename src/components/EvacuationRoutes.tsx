@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+
+import { useEffect, useState, useRef } from 'react';
 import { Polyline, Popup } from 'react-leaflet';
 import { EvacuationRouteType } from '@/types/emergency';
 
@@ -40,23 +41,38 @@ const LOCATIONS: Record<string, [number, number]> = {
 
 const GRAPHHOPPER_API_KEY = '5adb1e1c-29a2-4293-81c1-1c81779679bb';
 
-// Simple cache to avoid repeated API calls
-const routeCache: Record<string, [number, number][]> = {};
+// Global cache to persist routes across re-renders and component instances
+const globalRouteCache: Record<string, [number, number][]> = {};
 
 const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps) => {
   const [computedRoutes, setComputedRoutes] = useState<Route[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isMountedRef = useRef(true);
+  const isProcessingRef = useRef(false);
+  
+  // Use a ref to hold the routes to avoid dependency issues
+  const routesRef = useRef(routes);
+  routesRef.current = routes;
   
   useEffect(() => {
-    if (!standalone) {
+    isMountedRef.current = true;
+    
+    if (!standalone && !isProcessingRef.current) {
       calculateRoutes();
     }
-  }, [routes, standalone]);
+    
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [standalone]);
 
   const calculateRoutes = async () => {
+    if (isProcessingRef.current) return;
+    
+    isProcessingRef.current = true;
     try {
       // First set basic routes based on provided data
-      const baseRoutes = routes.map(route => ({
+      const baseRoutes = routesRef.current.map(route => ({
         id: route.id,
         path: route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]),
         status: route.status,
@@ -67,12 +83,14 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
         routeName: route.routeName
       }));
       
-      setComputedRoutes(baseRoutes);
+      if (isMountedRef.current) {
+        setComputedRoutes(baseRoutes);
+      }
       
       // Then enhance with more accurate road-based routes
       const enhancedRoutes: Route[] = [];
       
-      for (const route of routes) {
+      for (const route of routesRef.current) {
         try {
           // Get start and end coordinates
           let startCoords: [number, number];
@@ -94,13 +112,13 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
           }
 
           // Create cache key
-          const cacheKey = `${startCoords[0]},${startCoords[1]}_${endCoords[0]},${endCoords[1]}`;
+          const cacheKey = `${startCoords[0]},${startCoords[1]}_${endCoords[0]},${endCoords[1]}_${route.id}`;
           
           let path: [number, number][];
           
-          // Check cache first
-          if (routeCache[cacheKey]) {
-            path = routeCache[cacheKey];
+          // Check global cache first
+          if (globalRouteCache[cacheKey]) {
+            path = globalRouteCache[cacheKey];
           } else {
             // Fetch route from GraphHopper
             const response = await fetch(
@@ -122,14 +140,14 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
                 ([lng, lat]: [number, number]) => [lat, lng]
               ) as [number, number][];
               
-              // Save to cache
-              routeCache[cacheKey] = path;
+              // Save to global cache
+              globalRouteCache[cacheKey] = path;
             } else {
               throw new Error("No route found");
             }
           }
 
-          enhancedRoutes.push({
+          const enhancedRoute = {
             id: route.id,
             path: path,
             status: route.status,
@@ -138,7 +156,9 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
             estimatedTime: route.estimatedTime,
             transportMethods: route.transportMethods,
             routeName: route.routeName || `Route ${route.id}`
-          });
+          };
+          
+          enhancedRoutes.push(enhancedRoute);
           
           // Add a slight delay to prevent hitting API rate limits
           await new Promise(resolve => setTimeout(resolve, 200));
@@ -153,11 +173,17 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
         }
       }
       
-      setComputedRoutes(enhancedRoutes);
+      if (isMountedRef.current) {
+        setComputedRoutes(enhancedRoutes);
+        setIsLoading(false);
+      }
     } catch (error) {
       console.error('Error calculating routes:', error);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     } finally {
-      setIsLoading(false);
+      isProcessingRef.current = false;
     }
   };
 

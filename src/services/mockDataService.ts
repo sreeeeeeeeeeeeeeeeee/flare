@@ -7,6 +7,9 @@ const droneVideo = 'http://youtu.be/WHBClgDSPd0';
 // GraphHopper API key
 const GRAPHHOPPER_API_KEY = "5adb1e1c-29a2-4293-81c1-1c81779679bb";
 
+// Global persistent cache for evacuation routes
+const globalEvacuationRouteCache = {};
+
 // Generate a much smaller forest fire zone around Mistissini
 const generateForestFireZone = (nearRegion: number, id: string): DangerZoneType => {
   const region = mistissiniRegions[nearRegion];
@@ -285,24 +288,24 @@ const initialData: MapDataType = {
   ]
 };
 
-// IMPROVED: More stable evacuation route status updates
+// IMPROVED: Make evacuation route status updates extremely rare (only 5% chance)
 const updateEvacuationRouteStatus = (routes: EvacuationRouteType[], index: number): EvacuationRouteType => {
-  // Much lower probability for status changes (now just 20% chance) to maintain stability
-  if (Math.random() > 0.8) {
+  // Only a 5% chance of changing status to maintain stability
+  if (Math.random() > 0.95) {
     const updatedRoute = { ...routes[index] };
     
     // For highway routes, keep them mostly open for evacuation
     if (updatedRoute.routeName?.includes("Chibougamau")) {
-      updatedRoute.status = Math.random() > 0.8 ? "congested" : "open";
+      updatedRoute.status = Math.random() > 0.9 ? "congested" : "open";
     } else {
       const statusOptions: Array<'open' | 'congested' | 'closed'> = ['open', 'congested', 'closed'];
       updatedRoute.status = statusOptions[Math.floor(Math.random() * statusOptions.length)];
     }
     
-    // Sometimes update the estimated time as well but with smaller changes
-    if (Math.random() > 0.7) {
-      const currentTime = updatedRoute.estimatedTime;
-      const adjustment = Math.round((Math.random() - 0.5) * 5); // +/- 5 minutes max
+    // Very rarely update the estimated time as well but with smaller changes
+    if (Math.random() > 0.9) {
+      const currentTime = updatedRoute.estimatedTime || 10;
+      const adjustment = Math.round((Math.random() - 0.5) * 3); // +/- 3 minutes max
       updatedRoute.estimatedTime = Math.max(5, currentTime + adjustment); // Ensure at least 5 minutes
     }
     
@@ -353,7 +356,8 @@ const getUpdatedData = (): MapDataType => {
     }
   });
 
-  if (Math.random() > 0.8) {
+  // Rare responder addition (only 10% chance)
+  if (Math.random() > 0.9) {
     const newResponderTypes: Array<'drone' | 'police' | 'fire' | 'medical'> = ['drone', 'police', 'fire', 'medical'];
     const newResponderType = newResponderTypes[Math.floor(Math.random() * newResponderTypes.length)];
     
@@ -373,17 +377,20 @@ const getUpdatedData = (): MapDataType => {
     });
   }
   
-  if (Math.random() > 0.95 && data.responders.length > 6) {
+  // Rare responder removal (only 2% chance and only if we have enough)
+  if (Math.random() > 0.98 && data.responders.length > 6) {
     const indexToRemove = Math.floor(Math.random() * data.responders.length);
     data.responders.splice(indexToRemove, 1);
   }
   
-  if (Math.random() < 0.1 && data.evacuationRoutes.length > 0) {
+  // Make route updates extremely rare (only 2% chance)
+  if (Math.random() < 0.02 && data.evacuationRoutes.length > 0) {
     const routeIndex = Math.floor(Math.random() * data.evacuationRoutes.length);
     data.evacuationRoutes[routeIndex] = updateEvacuationRouteStatus(data.evacuationRoutes, routeIndex);
   }
   
-  if (Math.random() > 0.8) {
+  // Keep existing alerts code but slightly lower frequency (only 15% chance)
+  if (Math.random() > 0.85) {
     const alertSeverities: Array<'critical' | 'warning' | 'info'> = ['critical', 'warning', 'info'];
     const newSeverity = alertSeverities[Math.floor(Math.random() * alertSeverities.length)];
     const visibilityOptions: Array<'public' | 'admin' | 'all'> = ['public', 'admin', 'all'];
