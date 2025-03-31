@@ -137,7 +137,9 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
             color: '#94a3b8',
             weight: 2,
             opacity: 0.5,
-            dashArray: '4, 4'
+            dashArray: '4, 4',
+            lineJoin: 'round',
+            lineCap: 'round'
           }}
         >
           <Popup>
@@ -156,7 +158,9 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
             color: '#64748b',
             weight: 3,
             opacity: 0.4,
-            dashArray: '10, 5'
+            dashArray: '10, 5',
+            lineJoin: 'round',
+            lineCap: 'round'
           }}
         >
           <Popup>

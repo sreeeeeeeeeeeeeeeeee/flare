@@ -75,17 +75,25 @@ const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: numbe
     return routeCache[cacheKey];
   }
   
-  // For very small distances, just return a direct line
+  // For very small distances, create a smoother direct line with intermediate points
   const distance = Math.sqrt(
     Math.pow((start.lat - end.lat) * 111, 2) + 
     Math.pow((start.lng - end.lng) * 111 * Math.cos(start.lat * Math.PI / 180), 2)
   );
   
   if (distance < 0.5) { // Less than 500m
-    const directRoute: [number, number][] = [
-      [start.lat, start.lng],
-      [end.lat, end.lng]
-    ];
+    // Create a smoother path with more points for short distances
+    const directRoute: [number, number][] = [];
+    const steps = Math.max(5, Math.ceil(distance * 20)); // At least 5 points, more for longer distances
+    
+    for (let i = 0; i <= steps; i++) {
+      const ratio = i / steps;
+      directRoute.push([
+        start.lat + (end.lat - start.lat) * ratio,
+        start.lng + (end.lng - start.lng) * ratio
+      ]);
+    }
+    
     routeCache[cacheKey] = directRoute;
     return directRoute;
   }
@@ -169,9 +177,9 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
               );
             }
             
-            // Add a reasonable delay between requests to avoid API rate limiting
+            // Add a longer delay between requests to avoid API rate limiting
             if (i < routes.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 300));
+              await new Promise(resolve => setTimeout(resolve, 500));
             }
           } catch (err) {
             // Just log the error and continue with the next route
@@ -230,6 +238,8 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
             weight: 5,
             opacity: 0.9,
             lineCap: "round",
+            lineJoin: "round",
+            smoothFactor: 1
           }}
         >
           <Popup>
