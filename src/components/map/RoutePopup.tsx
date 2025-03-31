@@ -32,11 +32,11 @@ const RoutePopup: React.FC<RoutePopupProps> = ({ route }) => {
   const getStatusBadgeVariant = (status: 'open' | 'congested' | 'closed'): RouteStatusBadgeVariant => {
     switch (status) {
       case 'open':
-        return 'default';
+        return 'default'; // green
       case 'congested':
-        return 'secondary';
+        return 'secondary'; // orange
       case 'closed':
-        return 'destructive';
+        return 'destructive'; // red
       default:
         return 'default';
     }

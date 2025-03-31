@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { EvacuationRouteType } from '@/types/emergency';
+import { Badge } from '@/components/ui/badge';
 
 interface StandaloneEvacuationRoutesProps {
   routes: EvacuationRouteType[];
@@ -11,6 +12,20 @@ const StandaloneEvacuationRoutes: React.FC<StandaloneEvacuationRoutesProps> = ({
   routes, 
   isLoading 
 }) => {
+  // Get status badge style
+  const getStatusBadgeVariant = (status: 'open' | 'congested' | 'closed') => {
+    switch (status) {
+      case 'open':
+        return 'default'; // green
+      case 'congested':
+        return 'secondary'; // orange
+      case 'closed':
+        return 'destructive'; // red
+      default:
+        return 'default';
+    }
+  };
+
   return (
     <div className="p-4 rounded-lg border border-border">
       <h3 className="text-lg font-medium mb-2">Evacuation Routes</h3>
@@ -29,9 +44,9 @@ const StandaloneEvacuationRoutes: React.FC<StandaloneEvacuationRoutesProps> = ({
                   Estimated time: {route.estimatedTime} min
                 </div>
               </div>
-              <div className={`status-badge ${route.status}`}>
-                {route.status}
-              </div>
+              <Badge variant={getStatusBadgeVariant(route.status)}>
+                {route.status.toUpperCase()}
+              </Badge>
             </div>
           ))}
         </div>
