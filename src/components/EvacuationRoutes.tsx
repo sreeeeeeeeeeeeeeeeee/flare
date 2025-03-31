@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Polyline, Popup } from 'react-leaflet';
 import { EvacuationRouteType } from '@/types/emergency';
@@ -299,30 +298,28 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
     return (
       <div className="p-4 rounded-lg border border-border">
         <h3 className="text-lg font-medium mb-2">Evacuation Routes</h3>
-        <div className="space-y-2">
-          {routes.map((route) => (
-            <div key={`standalone-${route.id}`} className="p-2 bg-card rounded flex justify-between items-center">
-              <div>
-                <div className="font-medium">{route.routeName || `Route ${route.id}`}</div>
-                <div className="text-xs text-muted-foreground">
-                  {route.startPoint} → {route.endPoint}
+        {isLoading ? (
+          <div className="loading">Calculating evacuation routes...</div>
+        ) : (
+          <div className="space-y-2">
+            {routes.map((route) => (
+              <div key={`standalone-${route.id}`} className="p-2 bg-card rounded flex justify-between items-center">
+                <div>
+                  <div className="font-medium">{route.routeName || `Route ${route.id}`}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {route.startPoint} → {route.endPoint}
+                  </div>
+                  <div className="text-xs">
+                    Estimated time: {route.estimatedTime} min
+                  </div>
                 </div>
-                <div className="text-xs">
-                  Estimated time: {route.estimatedTime} min
+                <div className={`status-badge ${route.status}`}>
+                  {route.status}
                 </div>
               </div>
-              <div className={`px-2 py-1 text-xs rounded-full ${
-                route.status === 'open' 
-                  ? 'bg-green-100 text-green-800' 
-                  : route.status === 'congested' 
-                  ? 'bg-yellow-100 text-yellow-800' 
-                  : 'bg-red-100 text-red-800'
-              }`}>
-                {route.status}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -330,68 +327,57 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
   // Map view for routes
   return (
     <>
-      {computedRoutes.map((route) => (
-        <Polyline
-          key={`evac-route-${route.id}`}
-          positions={route.path}
-          pathOptions={{
-            color: route.status === "open" ? "#22c55e" : 
-                  route.status === "congested" ? "#f97316" : "#ef4444",
-            weight: 5,
-            opacity: route.status === "closed" ? 0.5 : 0.9,
-            lineCap: "round",
-            lineJoin: "round",
-            dashArray: route.status === "closed" ? "10, 10" : 
-                      route.status === "congested" ? "15, 5" : undefined
-          }}
-        >
-          <Popup className="min-w-[200px]">
-            <div className="space-y-1">
-              <h4 className="font-bold">{route.routeName || `Route ${route.id}`}</h4>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">From:</span>
-                <span>{route.start}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">To:</span>
-                <span>{route.end}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Status:</span>
-                <span className={`font-medium ${
-                  route.status === "open" ? "text-green-600" :
-                  route.status === "congested" ? "text-orange-600" : "text-red-600"
-                }`}>
-                  {route.status}
+      {isLoading ? (
+        <div className="loading">Calculating safest evacuation routes...</div>
+      ) : (
+        computedRoutes.map((route) => (
+          <Polyline
+            key={`evac-route-${route.id}`}
+            positions={route.path}
+            pathOptions={{
+              color: route.status === "open" ? "#22c55e" : 
+                    route.status === "congested" ? "#f97316" : "#ef4444",
+              weight: 5,
+              opacity: route.status === "closed" ? 0.5 : 0.9,
+              lineCap: "round",
+              lineJoin: "round",
+              dashArray: route.status === "closed" ? "10, 10" : 
+                        route.status === "congested" ? "15, 5" : undefined
+            }}
+          >
+            <Popup className="route-popup">
+              <h4>{route.routeName || `Route ${route.id}`}</h4>
+              <div className="route-meta">
+                <span className={`status-badge ${route.status}`}>
+                  {route.status.toUpperCase()}
                 </span>
+                {route.distance && (
+                  <span>{route.distance.toFixed(1)} km</span>
+                )}
+              </div>
+              <div>
+                <span className="text-muted-foreground text-xs">From:</span> {route.start}<br/>
+                <span className="text-muted-foreground text-xs">To:</span> {route.end}
               </div>
               {route.estimatedTime && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Time:</span>
-                  <span>{route.estimatedTime} min</span>
-                </div>
-              )}
-              {route.distance && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Distance:</span>
-                  <span>{route.distance.toFixed(1)} km</span>
+                <div className="mt-1">
+                  <span className="text-muted-foreground text-xs">Time:</span> {route.estimatedTime} min
                 </div>
               )}
               {route.transportMethods && route.transportMethods.length > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Transport:</span>
-                  <span>{route.transportMethods.join(', ')}</span>
+                <div className="text-xs mt-1">
+                  <span className="text-muted-foreground">Transport:</span> {route.transportMethods.join(', ')}
                 </div>
               )}
               {route.lastUpdated && (
-                <div className="text-xs text-muted-foreground mt-1">
+                <div className="route-updated">
                   Updated: {route.lastUpdated.toLocaleTimeString()}
                 </div>
               )}
-            </div>
-          </Popup>
-        </Polyline>
-      ))}
+            </Popup>
+          </Polyline>
+        ))
+      )}
     </>
   );
 };
