@@ -2,6 +2,7 @@
 import React from 'react';
 import { Polyline, Popup } from 'react-leaflet';
 import { Route } from '@/types/mapTypes';
+import { calculateDistance } from '@/utils/mapUtils';
 
 interface MapEvacuationRoutesProps {
   routes: Route[];
@@ -33,34 +34,20 @@ const MapEvacuationRoutes: React.FC<MapEvacuationRoutesProps> = ({ routes, isLoa
           }}
         >
           <Popup className="route-popup">
-            <h4>{route.routeName || `Route ${route.id}`}</h4>
+            <h4>{route.id}</h4>
             <div className="route-meta">
               <span className={`status-badge ${route.status}`}>
                 {route.status.toUpperCase()}
               </span>
-              {route.distance && (
-                <span>{route.distance.toFixed(1)} km</span>
-              )}
+              <span>{calculateDistance(route.path).toFixed(1)} km</span>
             </div>
             <div>
               <span className="text-muted-foreground text-xs">From:</span> {route.start}<br/>
               <span className="text-muted-foreground text-xs">To:</span> {route.end}
             </div>
-            {route.estimatedTime && (
-              <div className="mt-1">
-                <span className="text-muted-foreground text-xs">Time:</span> {route.estimatedTime} min
-              </div>
-            )}
-            {route.transportMethods && route.transportMethods.length > 0 && (
-              <div className="text-xs mt-1">
-                <span className="text-muted-foreground">Transport:</span> {route.transportMethods.join(', ')}
-              </div>
-            )}
-            {route.lastUpdated && (
-              <div className="route-updated">
-                Updated: {route.lastUpdated.toLocaleTimeString()}
-              </div>
-            )}
+            <div className="route-updated">
+              Updated: {route.updatedAt.toLocaleTimeString()}
+            </div>
           </Popup>
         </Polyline>
       ))}

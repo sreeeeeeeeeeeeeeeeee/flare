@@ -24,15 +24,13 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
     isProcessingRef.current = true;
     try {
       // First set basic routes based on provided data
-      const baseRoutes = routesRef.current.map(route => ({
+      const baseRoutes: Route[] = routesRef.current.map(route => ({
         id: route.id,
         path: route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]),
         status: route.status,
         start: route.startPoint,
         end: route.endPoint,
-        estimatedTime: route.estimatedTime,
-        transportMethods: route.transportMethods,
-        routeName: route.routeName
+        updatedAt: new Date()
       }));
       
       if (isMountedRef.current) {
@@ -50,19 +48,14 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
 
           // Get safe route avoiding water
           const path = await fetchSafeRoute(startCoords, endCoords);
-          const distance = calculateDistance(path);
-
-          const enhancedRoute = {
+          
+          const enhancedRoute: Route = {
             id: route.id,
             path: path,
             status: route.status,
             start: route.startPoint,
             end: route.endPoint,
-            estimatedTime: route.estimatedTime,
-            transportMethods: route.transportMethods,
-            routeName: route.routeName || `Route ${route.id}`,
-            distance,
-            lastUpdated: new Date()
+            updatedAt: new Date()
           };
           
           enhancedRoutes.push(enhancedRoute);
