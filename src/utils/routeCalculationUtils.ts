@@ -1,4 +1,3 @@
-
 /**
  * Utilities for route calculations and transformations
  */
@@ -35,44 +34,64 @@ export const calculateDistance = (path: [number, number][]) => {
   return total;
 };
 
-// Basic route fetching
-export const fetchRoute = async (start: [number, number], end: [number, number]) => {
+// Global route cache to avoid redundant API calls
+export const globalRouteCache: Record<string, [number, number][]> = {};
+
+// Fetch a road-following route using GraphHopper API
+export const fetchRoadRoute = async (
+  start: [number, number], 
+  end: [number, number]
+): Promise<[number, number][]> => {
   // Create cache key
   const cacheKey = `${start[0]},${start[1]}_${end[0]},${end[1]}`;
   
-  // Check cache first
+  // Return cached route if available
   if (globalRouteCache[cacheKey]) {
     return globalRouteCache[cacheKey];
   }
   
   try {
+    console.log(`Fetching road route from ${start} to ${end}`);
     const response = await fetch(
       `https://graphhopper.com/api/1/route?` +
       `point=${start[0]},${start[1]}&` +
       `point=${end[0]},${end[1]}&` +
       `vehicle=car&key=${GRAPHHOPPER_API_KEY}&` +
       `points_encoded=false&` +
-      `locale=en&` +
-      `ch.disable=true`
+      `locale=en`
     );
 
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
-    
-    const data = await response.json();
-    const path = data.paths?.[0]?.points?.coordinates?.map(
-      ([lng, lat]: [number, number]) => [lat, lng] as [number, number]
-    ) || null;
-    
-    if (path) {
-      // Save to cache
-      globalRouteCache[cacheKey] = path;
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
     }
     
-    return path;
+    const data = await response.json();
+    
+    // GraphHopper returns coordinates as [lng, lat], we need to convert to [lat, lng]
+    const path = data.paths?.[0]?.points?.coordinates?.map(
+      ([lng, lat]: [number, number]) => [lat, lng] as [number, number]
+    );
+    
+    if (path && path.length > 0) {
+      // Save to cache
+      globalRouteCache[cacheKey] = path;
+      return path;
+    } else {
+      throw new Error("No path found in API response");
+    }
   } catch (error) {
-    console.error('Routing error:', error);
-    return null;
+    console.error('GraphHopper API error:', error);
+    
+    // Return direct line route as fallback
+    console.log('Using fallback straight line route');
+    return [start, end] as [number, number][];
   }
+};
+
+// Basic route fetching - keeping for compatibility
+export const fetchRoute = async (start: [number, number], end: [number, number]) => {
+  // Now just calls the new fetchRoadRoute function
+  return fetchRoadRoute(start, end);
 };
 
 // Fetch route that avoids water
@@ -109,9 +128,6 @@ export const fetchSafeRoute = async (start: [number, number], end: [number, numb
     return [start, end];
   }
 };
-
-// Global cache to persist routes across re-renders and component instances
-export const globalRouteCache: Record<string, [number, number][]> = {};
 
 // Get location coordinates from name
 export const getLocationCoordinates = (locationName: string): [number, number] => {
