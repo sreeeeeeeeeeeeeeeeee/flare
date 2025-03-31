@@ -57,23 +57,19 @@ const generateInitialForestFireZones = (count: number = 3): DangerZoneType[] => 
   return zones;
 };
 
-// Generate evacuation routes that follow actual Mistissini streets exactly
+// Generate a reduced set of evacuation routes that follow actual Mistissini streets
 const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
   
-  // Main evacuation streets - ordered by priority
+  // Main evacuation streets - reduced to key priority routes only
   const streetsToUse = [
     "Main Street",
     "Saint John Street", 
-    "Lakeshore Drive",
-    "Northern Boulevard",
-    "Community Center Road",
-    "Southern Avenue",
-    "Western Route",
-    "Cree Cultural Way"
+    "Lakeshore Drive"
   ];
   
   // Paired streets that form complete evacuation routes (connect start to end)
+  // Reduced to just 2 strategic routes
   const combinedRoutes = [
     {
       name: "Northern Evacuation Route",
@@ -86,24 +82,6 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
       streets: ["Saint John Street", "Main Street"],
       startPoint: "Southern Mistissini",
       endPoint: "Eastern Mistissini"
-    },
-    {
-      name: "Lake Shore Evacuation",
-      streets: ["Lakeshore Drive", "Main Street"],
-      startPoint: "Eastern Shore",
-      endPoint: "Central Mistissini"
-    },
-    {
-      name: "Southern Escape Route",
-      streets: ["Southern Avenue", "Western Route"],
-      startPoint: "Southern Residential Area",
-      endPoint: "Western Exit"
-    },
-    {
-      name: "Community Center Access",
-      streets: ["Community Center Road", "Saint John Street"],
-      startPoint: "Community Center",
-      endPoint: "Central Mistissini"
     }
   ];
   
@@ -124,21 +102,6 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
       } else if (street.name === "Lakeshore Drive") {
         startPoint = "Lake Shore";
         endPoint = "Eastern Mistissini";
-      } else if (street.name === "Northern Boulevard") {
-        startPoint = "Northern Forest Area";
-        endPoint = "Central Mistissini";
-      } else if (street.name === "Southern Avenue") {
-        startPoint = "Southern Residential Area";
-        endPoint = "Central Mistissini";
-      } else if (street.name === "Community Center Road") {
-        startPoint = "Community Center";
-        endPoint = "Main Street";
-      } else if (street.name === "Western Route") {
-        startPoint = "Central Mistissini";
-        endPoint = "Western Exit";
-      } else if (street.name === "Cree Cultural Way") {
-        startPoint = "Cultural Center";
-        endPoint = "Western Area";
       } else {
         startPoint = `${street.name} Start`;
         endPoint = `${street.name} End`;
@@ -164,7 +127,7 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
     }
   });
   
-  // Add combined routes that follow multiple streets
+  // Add combined routes that follow multiple streets (reduced count)
   combinedRoutes.forEach((route, index) => {
     const status = Math.random() > 0.7 ? "congested" : "open";
     const estimatedTime = 5 + Math.floor(Math.random() * 15); // 5-20 minutes
@@ -196,36 +159,31 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
 };
 
 // Generate evacuation routes that follow highways to nearby towns
+// Reduced to just 1 main highway evacuation route
 const generateHighwayEvacuationRoutes = (): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
   
-  // Create evacuation routes for each highway with stable paths
-  mistissiniHighways.forEach((highway, index) => {
-    // Get the destination from the highway name or description
-    let destination = highway.name;
-    if (highway.name.includes("to ")) {
-      destination = highway.name.split("to ")[1].trim();
-    } else if (highway.description.includes("to ")) {
-      destination = highway.description.split("to ")[1].trim();
-    }
-    
+  // Only use the main highway to Chibougamau
+  const mainHighway = mistissiniHighways.find(hw => hw.name.includes("Chibougamau"));
+  
+  if (mainHighway) {
     // Convert path coordinates to GeoJSON format (lng, lat)
-    const coordinates = highway.path.map(point => [point[1], point[0]]);
+    const coordinates = mainHighway.path.map(point => [point[1], point[0]]);
     
     routes.push({
-      id: `route-highway-${index + 1}`,
+      id: `route-highway-1`,
       startPoint: "Mistissini",
-      endPoint: destination,
-      status: Math.random() > 0.7 ? "congested" : "open",
-      estimatedTime: 15 + Math.floor(Math.random() * 30), // 15-45 minutes for highways
+      endPoint: "Chibougamau",
+      status: "open", // Make the main evacuation highway always open
+      estimatedTime: 35, // Fixed time for stability
       transportMethods: ['car', 'emergency'],
-      routeName: highway.name,
+      routeName: mainHighway.name,
       geometry: {
         type: 'LineString',
         coordinates
       }
     });
-  });
+  }
   
   return routes;
 };
@@ -266,7 +224,7 @@ const generateDroneResponders = (dangerZones: DangerZoneType[]) => {
 const initialDangerZones = generateInitialForestFireZones(3);
 const initialDrones = generateDroneResponders(initialDangerZones);
 
-// Combine street and highway evacuation routes
+// Combine street and highway evacuation routes (reduced count)
 const allEvacuationRoutes = [
   ...generateStreetEvacuationRoutes(),
   ...generateHighwayEvacuationRoutes()
@@ -379,7 +337,7 @@ const initialData: MapDataType = {
   ]
 };
 
-// Function to update an evacuation route's status
+// Function to update an evacuation route's status without changing the path
 const updateEvacuationRouteStatus = (routes: EvacuationRouteType[], index: number): EvacuationRouteType => {
   // Just update the status without changing the path
   const updatedRoute = { ...routes[index] };
@@ -470,8 +428,8 @@ const getUpdatedData = (): MapDataType => {
   }
   
   // Update evacuation routes (status changes only, path stays the same)
-  // 30% chance to update a random route's status
-  if (Math.random() < 0.3 && data.evacuationRoutes.length > 0) {
+  // 20% chance to update a random route's status (less frequent to prevent flickering)
+  if (Math.random() < 0.2 && data.evacuationRoutes.length > 0) {
     const routeIndex = Math.floor(Math.random() * data.evacuationRoutes.length);
     data.evacuationRoutes[routeIndex] = updateEvacuationRouteStatus(data.evacuationRoutes, routeIndex);
   }
