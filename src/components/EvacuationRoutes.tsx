@@ -23,6 +23,14 @@ interface EvacuationRoutesProps {
 
 const API_KEY = "5adb1e1c-29a2-4293-81c1-1c81779679bb";
 
+const ensureCoordinate = (point: number[]): Coordinate => {
+  if (Array.isArray(point) && point.length >= 2) {
+    return [point[0], point[1]];
+  }
+  console.warn(`Invalid coordinate format: ${JSON.stringify(point)}`);
+  return [50.4221, -73.8683];
+};
+
 const extractCoordinates = (locationString: string): { lat: number; lng: number } => {
   const cleanString = locationString.replace(/[^\w\s()\-,.]/g, '').trim();
 
@@ -31,38 +39,52 @@ const extractCoordinates = (locationString: string): { lat: number; lng: number 
   );
   if (matchedStreet) {
     const midIndex = Math.floor(matchedStreet.path.length / 2);
-    return {
-      lat: matchedStreet.path[midIndex][0],
-      lng: matchedStreet.path[midIndex][1]
-    };
+    const point = ensureCoordinate(matchedStreet.path[midIndex]);
+    return { lat: point[0], lng: point[1] };
   }
 
   const matchedDestination = evacuationDestinations.find(dest => 
     cleanString.toLowerCase().includes(dest.name.toLowerCase())
   );
   if (matchedDestination) {
-    return {
-      lat: matchedDestination.lat,
-      lng: matchedDestination.lng
-    };
+    return { lat: matchedDestination.lat, lng: matchedDestination.lng };
   }
 
   const coordMatch = cleanString.match(/\((-?\d+\.\d+),\s*(-?\d+\.\d+)\)/);
   if (coordMatch) {
-    return {
-      lat: parseFloat(coordMatch[1]),
-      lng: parseFloat(coordMatch[2])
-    };
+    return { lat: parseFloat(coordMatch[1]), lng: parseFloat(coordMatch[2]) };
   }
 
   console.warn(`Could not determine coordinates for location: ${locationString}`);
   return { lat: 50.4221, lng: -73.8683 };
 };
 
-const routeCache: Record<string, Coordinate[]> = {};
+const MAX_CACHE_SIZE = 30;
+const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000;
+const routeCache: Record<string, { path: Coordinate[]; timestamp: number }> = {};
 
 const getCacheKey = (start: { lat: number; lng: number }, end: { lat: number; lng: number }): string => {
   return `${start.lat.toFixed(6)},${start.lng.toFixed(6)}_${end.lat.toFixed(6)},${end.lng.toFixed(6)}`;
+};
+
+const cleanCache = () => {
+  const now = Date.now();
+  const keys = Object.keys(routeCache);
+  
+  keys.forEach(key => {
+    if (now - routeCache[key].timestamp > CACHE_EXPIRATION_MS) {
+      delete routeCache[key];
+    }
+  });
+  
+  if (Object.keys(routeCache).length > MAX_CACHE_SIZE) {
+    const sortedKeys = Object.keys(routeCache).sort(
+      (a, b) => routeCache[a].timestamp - routeCache[b].timestamp
+    );
+    
+    const keysToRemove = sortedKeys.slice(0, sortedKeys.length - MAX_CACHE_SIZE);
+    keysToRemove.forEach(key => delete routeCache[key]);
+  }
 };
 
 const findClosestStreetPoint = (point: Coordinate, thresholdKm = 0.2): Coordinate | null => {
@@ -120,71 +142,88 @@ const findStreetRoute = (start: Coordinate, end: Coordinate): Coordinate[] => {
   });
   
   if (nearStartStreet && nearEndStreet && nearStartStreet.name === nearEndStreet.name) {
-    return nearStartStreet.path.map(p => [p[0], p[1]] as Coordinate);
+    return nearStartStreet.path.map(p => ensureCoordinate(p));
   }
   
   const route: Coordinate[] = [start];
   
   if (nearStartStreet) {
-    const startPathIndex = nearStartStreet.path.findIndex(point => {
-      if (point.length < 2) return false;
+    let startPathIndex = -1;
+    let minStartDistance = Infinity;
+    
+    nearStartStreet.path.forEach((point, idx) => {
+      if (point.length < 2) return;
       const distance = Math.sqrt(
         Math.pow(point[0] - start[0], 2) + 
         Math.pow(point[1] - start[1], 2)
       );
-      return distance < 0.005;
+      if (distance < minStartDistance) {
+        minStartDistance = distance;
+        startPathIndex = idx;
+      }
     });
     
     if (startPathIndex !== -1) {
-      route.push(...nearStartStreet.path.slice(startPathIndex).map(p => [p[0], p[1]] as Coordinate));
+      route.push(...nearStartStreet.path.slice(startPathIndex).map(p => ensureCoordinate(p)));
     }
   }
   
   if (nearStartStreet && nearEndStreet && nearStartStreet.name !== nearEndStreet.name) {
     const connectingStreets = [...mistissiniStreets, ...mistissiniHighways].filter(street => {
-      return street.name !== nearStartStreet.name && 
-             street.name !== nearEndStreet.name &&
-             street.path.some(point => {
-               if (point.length < 2) return false;
-               return nearStartStreet.path.some(startPoint => {
-                 if (startPoint.length < 2) return false;
-                 const distance = Math.sqrt(
-                   Math.pow(point[0] - startPoint[0], 2) + 
-                   Math.pow(point[1] - startPoint[1], 2)
-                 );
-                 return distance < 0.005;
-               });
-             }) &&
-             street.path.some(point => {
-               if (point.length < 2) return false;
-               return nearEndStreet.path.some(endPoint => {
-                 if (endPoint.length < 2) return false;
-                 const distance = Math.sqrt(
-                   Math.pow(point[0] - endPoint[0], 2) + 
-                   Math.pow(point[1] - endPoint[1], 2)
-                 );
-                 return distance < 0.005;
-               });
-             });
+      if (street.name === nearStartStreet.name || street.name === nearEndStreet.name) {
+        return false;
+      }
+      
+      const connectsToStart = street.path.some(point => {
+        if (point.length < 2) return false;
+        return nearStartStreet.path.some(startPoint => {
+          if (startPoint.length < 2) return false;
+          const distance = Math.sqrt(
+            Math.pow(point[0] - startPoint[0], 2) + 
+            Math.pow(point[1] - startPoint[1], 2)
+          );
+          return distance < 0.005;
+        });
+      });
+      
+      const connectsToEnd = street.path.some(point => {
+        if (point.length < 2) return false;
+        return nearEndStreet.path.some(endPoint => {
+          if (endPoint.length < 2) return false;
+          const distance = Math.sqrt(
+            Math.pow(point[0] - endPoint[0], 2) + 
+            Math.pow(point[1] - endPoint[1], 2)
+          );
+          return distance < 0.005;
+        });
+      });
+      
+      return connectsToStart && connectsToEnd;
     });
     
     if (connectingStreets.length > 0) {
-      route.push(...connectingStreets[0].path.map(p => [p[0], p[1]] as Coordinate));
+      route.push(...connectingStreets[0].path.map(p => ensureCoordinate(p)));
     }
   }
   
   if (nearEndStreet) {
-    const endPathIndex = nearEndStreet.path.findIndex(point => {
-      if (point.length < 2) return false;
+    let endPathIndex = -1;
+    let minEndDistance = Infinity;
+    
+    nearEndStreet.path.forEach((point, idx) => {
+      if (point.length < 2) return;
       const distance = Math.sqrt(
         Math.pow(point[0] - end[0], 2) + 
         Math.pow(point[1] - end[1], 2)
       );
-      return distance < 0.005;
+      if (distance < minEndDistance) {
+        minEndDistance = distance;
+        endPathIndex = idx;
+      }
     });
     
     if (endPathIndex !== -1) {
-      route.push(...nearEndStreet.path.slice(0, endPathIndex + 1).map(p => [p[0], p[1]] as Coordinate));
+      route.push(...nearEndStreet.path.slice(0, endPathIndex + 1).map(p => ensureCoordinate(p)));
     }
   }
   
@@ -200,41 +239,6 @@ const findStreetRoute = (start: Coordinate, end: Coordinate): Coordinate[] => {
   return uniqueRoute;
 };
 
-const distancePointToLine = (
-  point: Coordinate, 
-  lineStart: Coordinate, 
-  lineEnd: Coordinate
-): number => {
-  const A = point[0] - lineStart[0];
-  const B = point[1] - lineStart[1];
-  const C = lineEnd[0] - lineStart[0];
-  const D = lineEnd[1] - lineStart[1];
-
-  const dot = A * C + B * D;
-  const lenSq = C * C + D * D;
-  let param = -1;
-  
-  if (lenSq !== 0) param = dot / lenSq;
-
-  let xx, yy;
-
-  if (param < 0) {
-    xx = lineStart[0];
-    yy = lineStart[1];
-  } else if (param > 1) {
-    xx = lineEnd[0];
-    yy = lineEnd[1];
-  } else {
-    xx = lineStart[0] + param * C;
-    yy = lineStart[1] + param * D;
-  }
-
-  const dx = point[0] - xx;
-  const dy = point[1] - yy;
-  
-  return Math.sqrt(dx * dx + dy * dy);
-};
-
 const fetchRoute = async (
   start: { lat: number; lng: number },
   end: { lat: number; lng: number }
@@ -242,31 +246,32 @@ const fetchRoute = async (
   const startPoint: Coordinate = [start.lat, start.lng];
   const endPoint: Coordinate = [end.lat, end.lng];
   
-  const snappedStart = findClosestStreetPoint(startPoint);
-  const snappedEnd = findClosestStreetPoint(endPoint);
-
-  const effectiveStart = snappedStart || startPoint;
-  const effectiveEnd = snappedEnd || endPoint;
-
+  const snappedStart = findClosestStreetPoint(startPoint) || startPoint;
+  const snappedEnd = findClosestStreetPoint(endPoint) || endPoint;
+  
   const cacheKey = getCacheKey(
-    { lat: effectiveStart[0], lng: effectiveStart[1] },
-    { lat: effectiveEnd[0], lng: effectiveEnd[1] }
+    { lat: snappedStart[0], lng: snappedStart[1] },
+    { lat: snappedEnd[0], lng: snappedEnd[1] }
   );
 
   if (routeCache[cacheKey]) {
-    return routeCache[cacheKey];
+    return routeCache[cacheKey].path;
   }
 
-  const streetRoute = findStreetRoute(effectiveStart, effectiveEnd);
+  const streetRoute = findStreetRoute(snappedStart, snappedEnd);
   if (streetRoute.length > 2) {
-    routeCache[cacheKey] = streetRoute;
+    routeCache[cacheKey] = { 
+      path: streetRoute,
+      timestamp: Date.now()
+    };
+    cleanCache();
     return streetRoute;
   }
 
   try {
     const url = `https://graphhopper.com/api/1/route?` +
-      `point=${effectiveStart[0]},${effectiveStart[1]}&` +
-      `point=${effectiveEnd[0]},${effectiveEnd[1]}&` +
+      `point=${snappedStart[0]},${snappedStart[1]}&` +
+      `point=${snappedEnd[0]},${snappedEnd[1]}&` +
       `vehicle=car&locale=en&key=${API_KEY}&` +
       `points_encoded=false`;
 
@@ -283,62 +288,143 @@ const fetchRoute = async (
         ([lng, lat]: [number, number]) => [lat, lng] as Coordinate
       );
       
-      routeCache[cacheKey] = apiRoute;
+      routeCache[cacheKey] = { 
+        path: apiRoute,
+        timestamp: Date.now()
+      };
+      cleanCache();
       return apiRoute;
     }
     
-    const directRoute: Coordinate[] = [startPoint];
-    
-    const midPoints = [...mistissiniStreets, ...mistissiniHighways].reduce((points, street) => {
-      const isRelevant = street.path.some(p => {
-        if (p.length < 2) return false;
-        const pointCoord: Coordinate = [p[0], p[1]];
-        const distanceToLine = distancePointToLine(pointCoord, startPoint, endPoint);
-        return distanceToLine < 0.003;
-      });
-      
-      if (isRelevant) {
-        const validPoints = street.path
-          .filter(p => {
-            if (p.length < 2) return false;
-            const pointCoord: Coordinate = [p[0], p[1]];
-            return distancePointToLine(pointCoord, startPoint, endPoint) < 0.003;
-          })
-          .map(p => [p[0], p[1]] as Coordinate);
-          
-        points.push(...validPoints);
-      }
-      
-      return points;
-    }, [] as Coordinate[]);
-    
-    midPoints.sort((a, b) => {
-      const distA = Math.sqrt(Math.pow(a[0] - startPoint[0], 2) + Math.pow(a[1] - startPoint[1], 2));
-      const distB = Math.sqrt(Math.pow(b[0] - startPoint[0], 2) + Math.pow(b[1] - startPoint[1], 2));
-      return distA - distB;
-    });
-    
-    directRoute.push(...midPoints);
-    directRoute.push(endPoint);
-    
-    routeCache[cacheKey] = directRoute;
-    return directRoute;
+    throw new Error("API response missing coordinates");
   } catch (error) {
     console.error("Error fetching route:", error);
     
-    const fallbackRoute: Coordinate[] = [startPoint, endPoint];
-    routeCache[cacheKey] = fallbackRoute;
-    return fallbackRoute;
+    const directRoute: Coordinate[] = [startPoint];
+    
+    const relevantStreets = [...mistissiniStreets, ...mistissiniHighways].filter(street => {
+      return street.path.some(p => {
+        if (p.length < 2) return false;
+        
+        const x = p[0];
+        const y = p[1];
+        const x1 = startPoint[0];
+        const y1 = startPoint[1];
+        const x2 = endPoint[0];
+        const y2 = endPoint[1];
+        
+        const A = x - x1;
+        const B = y - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+        
+        const dot = A * C + B * D;
+        const len_sq = C * C + D * D;
+        let param = -1;
+        if (len_sq != 0) param = dot / len_sq;
+        
+        let xx, yy;
+        if (param < 0) {
+          xx = x1;
+          yy = y1;
+        } else if (param > 1) {
+          xx = x2;
+          yy = y2;
+        } else {
+          xx = x1 + param * C;
+          yy = y1 + param * D;
+        }
+        
+        const dx = x - xx;
+        const dy = y - yy;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        return distance < 0.003;
+      });
+    });
+    
+    relevantStreets.forEach(street => {
+      const relevantPoints = street.path
+        .filter(p => p.length >= 2)
+        .map(p => ensureCoordinate(p))
+        .filter(point => {
+          const x = point[0];
+          const y = point[1];
+          const x1 = startPoint[0];
+          const y1 = startPoint[1];
+          const x2 = endPoint[0];
+          const y2 = endPoint[1];
+          
+          const A = x - x1;
+          const B = y - y1;
+          const C = x2 - x1;
+          const D = y2 - y1;
+          
+          const dot = A * C + B * D;
+          const len_sq = C * C + D * D;
+          let param = -1;
+          if (len_sq != 0) param = dot / len_sq;
+          
+          let xx, yy;
+          if (param < 0) {
+            xx = x1;
+            yy = y1;
+          } else if (param > 1) {
+            xx = x2;
+            yy = y2;
+          } else {
+            xx = x1 + param * C;
+            yy = y1 + param * D;
+          }
+          
+          const dx = x - xx;
+          const dy = y - yy;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          return distance < 0.003;
+        });
+      
+      if (relevantPoints.length > 0) {
+        relevantPoints.sort((a, b) => {
+          const distA = Math.sqrt(Math.pow(a[0] - startPoint[0], 2) + Math.pow(a[1] - startPoint[1], 2));
+          const distB = Math.sqrt(Math.pow(b[0] - startPoint[0], 2) + Math.pow(b[1] - startPoint[1], 2));
+          return distA - distB;
+        });
+        
+        directRoute.push(...relevantPoints);
+      }
+    });
+    
+    directRoute.push(endPoint);
+    
+    const uniqueRoute: Coordinate[] = [];
+    directRoute.forEach(point => {
+      if (!uniqueRoute.some(p => p[0] === point[0] && p[1] === point[1])) {
+        uniqueRoute.push(point);
+      }
+    });
+    
+    routeCache[cacheKey] = { 
+      path: uniqueRoute,
+      timestamp: Date.now()
+    };
+    cleanCache();
+    return uniqueRoute;
   }
 };
 
 const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps) => {
   const [computedRoutes, setComputedRoutes] = useState<RouteCoordinates[]>([]);
-  const isProcessingRef = useRef(false);
+  const processingRef = useRef(false);
+  const routesRef = useRef(routes);
   
   useEffect(() => {
-    if (!standalone && routes.length > 0 && !isProcessingRef.current) {
-      isProcessingRef.current = true;
+    routesRef.current = routes;
+  }, [routes]);
+  
+  useEffect(() => {
+    if (!standalone && routes.length > 0 && !processingRef.current) {
+      processingRef.current = true;
       
       const baseRoutes = routes.map(route => ({
         id: route.id,
@@ -352,12 +438,12 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
       }));
       
       setComputedRoutes(baseRoutes);
-
+      
       const enhanceRoutes = async () => {
         try {
           const enhancedRoutes = [];
           
-          for (const route of routes) {
+          for (const route of routesRef.current) {
             try {
               const startCoords = extractCoordinates(route.startPoint);
               const endCoords = extractCoordinates(route.endPoint);
@@ -387,7 +473,7 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
           
           setComputedRoutes(enhancedRoutes);
         } finally {
-          isProcessingRef.current = false;
+          processingRef.current = false;
         }
       };
       

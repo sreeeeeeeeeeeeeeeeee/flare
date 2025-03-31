@@ -57,35 +57,17 @@ const generateInitialForestFireZones = (count: number = 3): DangerZoneType[] => 
   return zones;
 };
 
-// Generate a reduced set of evacuation routes that follow actual Mistissini streets
+// REDUCED: Generate only 2 evacuation routes that follow actual Mistissini streets
 const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
   
-  // Main evacuation streets - reduced to key priority routes only
+  // REDUCED: Only use 2 main streets for evacuation
   const streetsToUse = [
     "Main Street",
-    "Saint John Street", 
     "Lakeshore Drive"
   ];
   
-  // Paired streets that form complete evacuation routes (connect start to end)
-  // Reduced to just 2 strategic routes
-  const combinedRoutes = [
-    {
-      name: "Northern Evacuation Route",
-      streets: ["Northern Boulevard", "Main Street"],
-      startPoint: "Northern Forest Area",
-      endPoint: "Eastern Mistissini"
-    },
-    {
-      name: "Central Evacuation Route",
-      streets: ["Saint John Street", "Main Street"],
-      startPoint: "Southern Mistissini",
-      endPoint: "Eastern Mistissini"
-    }
-  ];
-  
-  // Create evacuation routes for each selected street - ensuring stable paths
+  // Create evacuation routes for each selected street
   streetsToUse.forEach((streetName, index) => {
     const street = mistissiniStreets.find(s => s.name === streetName);
     
@@ -96,9 +78,6 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
       if (street.name === "Main Street") {
         startPoint = "Eastern Mistissini";
         endPoint = "Western Mistissini";
-      } else if (street.name === "Saint John Street") {
-        startPoint = "Northern Mistissini";
-        endPoint = "Southern Mistissini";
       } else if (street.name === "Lakeshore Drive") {
         startPoint = "Lake Shore";
         endPoint = "Eastern Mistissini";
@@ -127,39 +106,10 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
     }
   });
   
-  // Add combined routes that follow multiple streets (reduced count)
-  combinedRoutes.forEach((route, index) => {
-    const status = Math.random() > 0.7 ? "congested" : "open";
-    const estimatedTime = 5 + Math.floor(Math.random() * 15); // 5-20 minutes
-    
-    // Find the first street mentioned in the route to use its path
-    const primaryStreet = mistissiniStreets.find(s => s.name === route.streets[0]);
-    
-    if (primaryStreet) {
-      // Use the primary street's path for stability
-      const coordinates = primaryStreet.path.map(point => [point[1], point[0]]);
-      
-      routes.push({
-        id: `route-combined-${index + 1}`,
-        startPoint: route.startPoint,
-        endPoint: route.endPoint,
-        status,
-        estimatedTime,
-        transportMethods: ['car', 'emergency', 'foot'],
-        routeName: route.name,
-        geometry: {
-          type: 'LineString',
-          coordinates
-        }
-      });
-    }
-  });
-  
   return routes;
 };
 
-// Generate evacuation routes that follow highways to nearby towns
-// Reduced to just 1 main highway evacuation route
+// REDUCED: Generate only 1 highway evacuation route
 const generateHighwayEvacuationRoutes = (): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
   
@@ -224,18 +174,17 @@ const generateDroneResponders = (dangerZones: DangerZoneType[]) => {
 const initialDangerZones = generateInitialForestFireZones(3);
 const initialDrones = generateDroneResponders(initialDangerZones);
 
-// Combine street and highway evacuation routes (reduced count)
+// REDUCED: Combine street and highway evacuation routes (reduced count)
 const allEvacuationRoutes = [
-  ...generateStreetEvacuationRoutes(),
-  ...generateHighwayEvacuationRoutes()
+  ...generateStreetEvacuationRoutes(), // Now only 2 street routes
+  ...generateHighwayEvacuationRoutes() // Now only 1 highway route
 ];
 
 // Initial data state focused on Mistissini
 const initialData: MapDataType = {
+  // ... keep existing code (responders section)
   responders: [
-    // Include generated drones
     ...initialDrones,
-    // Add other responders in the Mistissini area
     {
       id: 'resp-1',
       name: 'Mistissini Fire Squad',
@@ -284,6 +233,7 @@ const initialData: MapDataType = {
   dangerZones: initialDangerZones,
   evacuationRoutes: allEvacuationRoutes,
   alerts: [
+    // ... keep existing code (alerts section)
     {
       id: 'alert-1',
       severity: 'critical',
@@ -326,6 +276,7 @@ const initialData: MapDataType = {
     }
   ],
   videoFeeds: [
+    // ... keep existing code (video feeds section)
     {
       id: 'video-1',
       type: 'drone',
@@ -337,21 +288,27 @@ const initialData: MapDataType = {
   ]
 };
 
-// Function to update an evacuation route's status without changing the path
+// MODIFIED: Function to update an evacuation route's status without changing the path
+// Reduced frequency of status changes to prevent flickering
 const updateEvacuationRouteStatus = (routes: EvacuationRouteType[], index: number): EvacuationRouteType => {
-  // Just update the status without changing the path
-  const updatedRoute = { ...routes[index] };
-  const statusOptions: Array<'open' | 'congested' | 'closed'> = ['open', 'congested', 'closed'];
-  updatedRoute.status = statusOptions[Math.floor(Math.random() * statusOptions.length)];
-  
-  // Sometimes update the estimated time as well
+  // Lower probability for status changes (now just 30% chance)
   if (Math.random() > 0.7) {
-    const currentTime = updatedRoute.estimatedTime;
-    const adjustment = Math.round((Math.random() - 0.5) * 10); // +/- 10 minutes max
-    updatedRoute.estimatedTime = Math.max(5, currentTime + adjustment); // Ensure at least 5 minutes
+    const updatedRoute = { ...routes[index] };
+    const statusOptions: Array<'open' | 'congested' | 'closed'> = ['open', 'congested', 'closed'];
+    updatedRoute.status = statusOptions[Math.floor(Math.random() * statusOptions.length)];
+    
+    // Sometimes update the estimated time as well
+    if (Math.random() > 0.7) {
+      const currentTime = updatedRoute.estimatedTime;
+      const adjustment = Math.round((Math.random() - 0.5) * 10); // +/- 10 minutes max
+      updatedRoute.estimatedTime = Math.max(5, currentTime + adjustment); // Ensure at least 5 minutes
+    }
+    
+    return updatedRoute;
   }
   
-  return updatedRoute;
+  // Most of the time, return the unchanged route
+  return routes[index];
 };
 
 // Function to create slightly different data to simulate real-time updates for Mistissini
@@ -360,6 +317,7 @@ const getUpdatedData = (): MapDataType => {
   const data: MapDataType = JSON.parse(JSON.stringify(initialData));
   
   // Update responder positions
+  // ... keep existing code (responder positions)
   data.responders.forEach(responder => {
     // For drone responders, keep them moving more actively around danger zones
     if (responder.type === 'drone') {
@@ -399,8 +357,9 @@ const getUpdatedData = (): MapDataType => {
     }
   });
 
-  // Sometimes add a new responder (30% chance)
-  if (Math.random() > 0.7) {
+  // Sometimes add a new responder (20% chance instead of 30%)
+  if (Math.random() > 0.8) {
+    // ... keep existing code (new responder creation)
     const newResponderTypes: Array<'drone' | 'police' | 'fire' | 'medical'> = ['drone', 'police', 'fire', 'medical'];
     const newResponderType = newResponderTypes[Math.floor(Math.random() * newResponderTypes.length)];
     
@@ -421,21 +380,22 @@ const getUpdatedData = (): MapDataType => {
     });
   }
   
-  // Sometimes remove a responder (10% chance, if we have more than 6 responders)
-  if (Math.random() > 0.9 && data.responders.length > 6) {
+  // Sometimes remove a responder (5% chance instead of 10%)
+  if (Math.random() > 0.95 && data.responders.length > 6) {
     const indexToRemove = Math.floor(Math.random() * data.responders.length);
     data.responders.splice(indexToRemove, 1);
   }
   
-  // Update evacuation routes (status changes only, path stays the same)
-  // 20% chance to update a random route's status (less frequent to prevent flickering)
-  if (Math.random() < 0.2 && data.evacuationRoutes.length > 0) {
+  // REDUCED: Update evacuation routes (status changes only, path stays the same)
+  // Only 10% chance to update a random route's status (reduced from 20%)
+  if (Math.random() < 0.1 && data.evacuationRoutes.length > 0) {
     const routeIndex = Math.floor(Math.random() * data.evacuationRoutes.length);
     data.evacuationRoutes[routeIndex] = updateEvacuationRouteStatus(data.evacuationRoutes, routeIndex);
   }
   
-  // Sometimes add a new street-specific alert
-  if (Math.random() > 0.7) {
+  // Sometimes add a new alert (20% chance instead of 30%)
+  if (Math.random() > 0.8) {
+    // ... keep existing code (alert creation)
     const alertSeverities: Array<'critical' | 'warning' | 'info'> = ['critical', 'warning', 'info'];
     const newSeverity = alertSeverities[Math.floor(Math.random() * alertSeverities.length)];
     const visibilityOptions: Array<'public' | 'admin' | 'all'> = ['public', 'admin', 'all'];
