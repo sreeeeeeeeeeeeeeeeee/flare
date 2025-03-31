@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Polyline, Popup, useMap } from "react-leaflet";
+import { Polyline, Popup } from "react-leaflet";
 import { EvacuationRouteType } from "@/types/emergency";
 
 // GraphHopper API integration for evacuation routes
@@ -50,71 +50,75 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
   };
 
   useEffect(() => {
-    // Process each route in the data
-    const getRoutes = async () => {
-      if (!routes || routes.length === 0) {
-        console.log("No evacuation routes provided");
-        return;
-      }
-      
-      console.log("Processing evacuation routes:", routes.length);
-      
+    // Only fetch and process routes if we're not in standalone mode
+    // This prevents unnecessary API calls and state updates
+    if (!standalone) {
       // Process each route in the data
-      const newRoutes = await Promise.all(
-        routes.map(async (route) => {
-          try {
-            console.log("Processing route:", route.id, route.routeName);
-            
-            // Extract start/end coordinates from route geometry or use fallbacks
-            let startLat, startLng, endLat, endLng;
-            
-            if (route.geometry && route.geometry.coordinates && route.geometry.coordinates.length >= 2) {
-              // Get first and last points from the route geometry
-              startLng = route.geometry.coordinates[0][0];
-              startLat = route.geometry.coordinates[0][1];
-              endLng = route.geometry.coordinates[route.geometry.coordinates.length - 1][0];
-              endLat = route.geometry.coordinates[route.geometry.coordinates.length - 1][1];
-            } else {
-              // Fallback: generate points near Mistissini
-              startLat = 50.4221 - 0.01 + Math.random() * 0.005;
-              startLng = -73.8683 - 0.01 + Math.random() * 0.005;
-              endLat = 50.4221 - 0.005 + Math.random() * 0.01;
-              endLng = -73.8683 - 0.005 + Math.random() * 0.01;
+      const getRoutes = async () => {
+        if (!routes || routes.length === 0) {
+          console.log("No evacuation routes provided");
+          return;
+        }
+        
+        console.log("Processing evacuation routes:", routes.length);
+        
+        // Process each route in the data
+        const newRoutes = await Promise.all(
+          routes.map(async (route) => {
+            try {
+              console.log("Processing route:", route.id, route.routeName);
+              
+              // Extract start/end coordinates from route geometry or use fallbacks
+              let startLat, startLng, endLat, endLng;
+              
+              if (route.geometry && route.geometry.coordinates && route.geometry.coordinates.length >= 2) {
+                // Get first and last points from the route geometry
+                startLng = route.geometry.coordinates[0][0];
+                startLat = route.geometry.coordinates[0][1];
+                endLng = route.geometry.coordinates[route.geometry.coordinates.length - 1][0];
+                endLat = route.geometry.coordinates[route.geometry.coordinates.length - 1][1];
+              } else {
+                // Fallback: generate points near Mistissini
+                startLat = 50.4221 - 0.01 + Math.random() * 0.005;
+                startLng = -73.8683 - 0.01 + Math.random() * 0.005;
+                endLat = 50.4221 - 0.005 + Math.random() * 0.01;
+                endLng = -73.8683 - 0.005 + Math.random() * 0.01;
+              }
+              
+              // Fetch the route using GraphHopper API
+              console.log("Using GraphHopper API to fetch route");
+              const path = await fetchRoute(startLat, startLng, endLat, endLng);
+              
+              console.log(`Route ${route.id} processed with ${path.length} points`);
+              
+              return { 
+                id: route.id, 
+                path, 
+                status: route.status,
+                routeName: route.routeName || '',
+                startPoint: route.startPoint,
+                endPoint: route.endPoint,
+                estimatedTime: route.estimatedTime,
+                transportMethods: route.transportMethods
+              } as RouteCoordinates;
+            } catch (err) {
+              console.error("Error processing route:", err);
+              return null;
             }
-            
-            // Fetch the route using GraphHopper API
-            console.log("Using GraphHopper API to fetch route");
-            const path = await fetchRoute(startLat, startLng, endLat, endLng);
-            
-            console.log(`Route ${route.id} processed with ${path.length} points`);
-            
-            return { 
-              id: route.id, 
-              path, 
-              status: route.status,
-              routeName: route.routeName || '',
-              startPoint: route.startPoint,
-              endPoint: route.endPoint,
-              estimatedTime: route.estimatedTime,
-              transportMethods: route.transportMethods
-            } as RouteCoordinates;
-          } catch (err) {
-            console.error("Error processing route:", err);
-            return null;
-          }
-        })
-      );
-      
-      // Filter out any failed routes and set in state
-      const validRoutes = newRoutes.filter((r): r is RouteCoordinates => r !== null);
-      console.log("Valid routes processed:", validRoutes.length);
-      setComputedRoutes(validRoutes);
-    };
+          })
+        );
+        
+        // Filter out any failed routes and set in state
+        const validRoutes = newRoutes.filter((r): r is RouteCoordinates => r !== null);
+        console.log("Valid routes processed:", validRoutes.length);
+        setComputedRoutes(validRoutes);
+      };
 
-    getRoutes();
-  }, [routes]);
+      getRoutes();
+    }
+  }, [routes, standalone]);
 
-  console.log("Rendering evacuation routes:", computedRoutes.length);
+  console.log("Rendering evacuation routes:", computedRoutes.length, "standalone:", standalone);
 
   // If standalone is true, this is being rendered outside a map context, so just render info
   if (standalone) {
