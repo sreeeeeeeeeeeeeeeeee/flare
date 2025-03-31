@@ -2,7 +2,8 @@
 import React from 'react';
 import { Polyline, Popup } from 'react-leaflet';
 import { Route } from '@/types/mapTypes';
-import { calculateDistance, getRouteColor } from '@/utils/mapUtils';
+import { calculateDistance } from '@/utils/mapUtils';
+import { statusConfig } from '@/utils/routeStatusConfig';
 
 interface MapEvacuationRoutesProps {
   routes: Route[];
@@ -21,7 +22,7 @@ const MapEvacuationRoutes: React.FC<MapEvacuationRoutesProps> = ({ routes, isLoa
           key={`evac-route-${route.id}`}
           positions={route.path}
           pathOptions={{
-            color: getRouteColor(route.status),
+            color: statusConfig[route.status].color,
             weight: 5,
             opacity: route.status === "closed" ? 0.5 : 0.9,
             lineCap: "round",

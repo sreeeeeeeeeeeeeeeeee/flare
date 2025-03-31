@@ -9,9 +9,9 @@ export const statusConfig = {
   },
   congested: { 
     display: "CONGESTED", 
-    color: "#f97316", 
+    color: "#eab308", 
     panelClass: "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20",
-    mapOptions: { color: "#f97316", weight: 6, dashArray: "5, 5" }
+    mapOptions: { color: "#eab308", weight: 6, dashArray: "5, 5" }
   },
   closed: { 
     display: "CLOSED", 

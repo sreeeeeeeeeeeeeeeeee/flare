@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { statusConfig } from '@/utils/routeStatusConfig';
 
 const RouteStatusLegend = () => {
   return (
@@ -15,7 +16,7 @@ const RouteStatusLegend = () => {
           <span className="text-xs">Open</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-[#f97316]"></div>
+          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: statusConfig.congested.color }}></div>
           <span className="text-xs">Congested</span>
         </div>
         <div className="flex items-center gap-2">
