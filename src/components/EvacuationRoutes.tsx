@@ -1,5 +1,6 @@
+
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Polyline, Popup } from 'react-leaflet';
+import { Polyline, Popup, useMap } from 'react-leaflet';
 import { EvacuationRouteType } from '@/types/emergency';
 
 // Define types for our data
@@ -71,11 +72,23 @@ const GRAPHHOPPER_API_KEY = '5adb1e1c-29a2-4293-81c1-1c81779679bb';
 // Global cache to persist routes across re-renders and component instances
 const globalRouteCache: Record<string, [number, number][]> = {};
 
+// Check if we're inside a Leaflet map context
+const useIsInMapContainer = () => {
+  try {
+    // This will throw if we're not in a MapContainer
+    useMap();
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
 const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps) => {
   const [computedRoutes, setComputedRoutes] = useState<Route[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const isMountedRef = useRef(true);
   const isProcessingRef = useRef(false);
+  const isInMapContainer = standalone ? false : useIsInMapContainer();
   
   // Use a ref to hold the routes to avoid dependency issues
   const routesRef = useRef(routes);
@@ -190,14 +203,14 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
   useEffect(() => {
     isMountedRef.current = true;
     
-    if (!standalone && !isProcessingRef.current) {
+    if (!standalone && !isProcessingRef.current && isInMapContainer) {
       calculateRoutes();
     }
     
     return () => {
       isMountedRef.current = false;
     };
-  }, [standalone]);
+  }, [standalone, isInMapContainer]);
 
   const calculateRoutes = async () => {
     if (isProcessingRef.current) return;
@@ -322,6 +335,12 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
         )}
       </div>
     );
+  }
+
+  // Only render map elements if we're actually inside a MapContainer
+  if (!isInMapContainer) {
+    console.log("EvacuationRoutes: Not rendering map elements because we're not in a MapContainer");
+    return null;
   }
 
   // Map view for routes
