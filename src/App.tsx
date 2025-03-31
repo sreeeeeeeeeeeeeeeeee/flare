@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import UserDashboard from "./pages/UserDashboard";
 import NotFound from "./pages/NotFound";
+import EmergencyDashboard from "./components/EmergencyDashboard";
 
 // Create the query client outside of the component
 const queryClient = new QueryClient();
@@ -19,6 +20,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/user" element={<UserDashboard />} />
+            <Route path="/emergency" element={<EmergencyDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
