@@ -2,21 +2,21 @@
 import { DangerZoneType } from '@/types/emergency';
 import { mistissiniRegions, mistissiniForestRegions } from '../mistissini';
 
-// Generate a much smaller forest fire zone around Mistissini
-export const generateForestFireZone = (nearRegion: number, id: string): DangerZoneType => {
-  const region = mistissiniRegions[nearRegion];
-  const riskLevels: Array<'high' | 'medium' | 'low'> = ['high', 'medium', 'low'];
+// Generate a single forest fire zone in the center of Mistissini
+export const generateForestFireZone = (id: string): DangerZoneType => {
+  // Use the center region (Mistissini Center)
+  const centerRegion = mistissiniRegions.find(region => 
+    region.name.toLowerCase().includes('center')) || mistissiniRegions[0];
   
-  // Create a smaller irregular polygon around the region
-  // Further reduced radius to make the danger zones highly focused
-  const radius = 0.002 + Math.random() * 0.004; // Even smaller radius between 0.002 and 0.006 degrees
-  const sides = 5 + Math.floor(Math.random() * 3); // 5-7 sides for the polygon
+  // Create a smaller irregular polygon around the central region
+  const radius = 0.003; // Small radius for a focused danger zone
+  const sides = 6; // Hexagonal shape
   const coordinates = [];
   
   for (let i = 0; i < sides; i++) {
     const angle = (i / sides) * Math.PI * 2;
-    const lng = region.center.lng + Math.cos(angle) * radius * (0.8 + Math.random() * 0.4); // Add irregularity
-    const lat = region.center.lat + Math.sin(angle) * radius * (0.8 + Math.random() * 0.4);
+    const lng = centerRegion.center.lng + Math.cos(angle) * radius * (0.9 + Math.random() * 0.2);
+    const lat = centerRegion.center.lat + Math.sin(angle) * radius * (0.9 + Math.random() * 0.2);
     coordinates.push([lng, lat]);
   }
   
@@ -25,9 +25,9 @@ export const generateForestFireZone = (nearRegion: number, id: string): DangerZo
   
   return {
     id,
-    type: 'wildfire', // Always wildfire for forest fires
-    riskLevel: riskLevels[Math.floor(Math.random() * riskLevels.length)],
-    forestRegion: mistissiniForestRegions[Math.floor(Math.random() * mistissiniForestRegions.length)],
+    type: 'wildfire',
+    riskLevel: 'high', // Always high risk for the central danger zone
+    forestRegion: 'Mistissini Central Forest',
     geometry: {
       type: 'Polygon',
       coordinates: [coordinates]
@@ -35,19 +35,7 @@ export const generateForestFireZone = (nearRegion: number, id: string): DangerZo
   };
 };
 
-// Function to generate initial forest fire zones around Mistissini - now with even smaller zones
-export const generateInitialForestFireZones = (count: number = 3): DangerZoneType[] => {
-  const zones: DangerZoneType[] = [];
-  const usedRegions = new Set<number>();
-  
-  // Generate fires in different regions around Mistissini
-  while (zones.length < count && usedRegions.size < mistissiniRegions.length) {
-    const regionIndex = Math.floor(Math.random() * mistissiniRegions.length);
-    if (!usedRegions.has(regionIndex)) {
-      zones.push(generateForestFireZone(regionIndex, `zone-${zones.length + 1}`));
-      usedRegions.add(regionIndex);
-    }
-  }
-  
-  return zones;
+// Generate initial forest fire zones - now just one in the center
+export const generateInitialForestFireZones = (): DangerZoneType[] => {
+  return [generateForestFireZone('zone-1')];
 };

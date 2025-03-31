@@ -14,7 +14,7 @@ const fixedEvacuationRoutes = [
     id: 'route-1',
     type: 'street' as const,
     status: 'open' as const,
-    startPoint: 'Mistissini Center',
+    startPoint: 'Lake Shore',
     endPoint: 'Eastern Mistissini',
     estimatedTime: 5,
     transportMethods: ['car', 'emergency'] as Array<'car' | 'foot' | 'emergency'>,
@@ -90,6 +90,10 @@ export const mockDataService = {
     // Return a copy of the initial data with fixed evacuation routes
     const data = {...initialData};
     data.evacuationRoutes = JSON.parse(JSON.stringify(fixedEvacuationRoutes));
+    
+    // Make sure we only have one danger zone in the center
+    data.dangerZones = initialData.dangerZones.slice(0, 1);
+    
     return data;
   },
   getUpdatedData: () => {
@@ -98,6 +102,9 @@ export const mockDataService = {
     
     // Ensure the evacuation routes remain fixed with consistent statuses
     updatedData.evacuationRoutes = JSON.parse(JSON.stringify(fixedEvacuationRoutes));
+    
+    // Make sure we only have one danger zone in the center
+    updatedData.dangerZones = initialData.dangerZones.slice(0, 1);
     
     return updatedData;
   }

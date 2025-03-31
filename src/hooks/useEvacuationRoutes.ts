@@ -2,7 +2,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Route } from '@/types/mapTypes';
 import { EvacuationRouteType } from '@/types/emergency';
-import { getLocationCoordinates } from '@/utils/routeCalculationUtils';
 import { fetchRoadRoute } from '@/utils/routeCalculationUtils';
 import { mistissiniStreets, mistissiniHighways } from '@/services/mistissini';
 
@@ -52,14 +51,19 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
           
           // Fallback to predefined routes if API fails
           if (route.id === 'route-1') {
-            enhancedRoutes.push({
-              id: route.id,
-              path: mistissiniStreets.find(street => street.name === "Main Street")?.path as [number, number][],
-              status: route.status,
-              start: route.startPoint,
-              end: route.endPoint,
-              updatedAt: new Date()
-            });
+            // Ensure the open route is always visible with a proper path
+            const mainStreet = mistissiniStreets.find(street => street.name === "Main Street");
+            if (mainStreet && mainStreet.path) {
+              console.log("Using fallback path for open route:", mainStreet.path);
+              enhancedRoutes.push({
+                id: route.id,
+                path: mainStreet.path,
+                status: 'open', // Ensure it's always open
+                start: route.startPoint,
+                end: route.endPoint,
+                updatedAt: new Date()
+              });
+            }
           } else if (route.id === 'route-2') {
             enhancedRoutes.push({
               id: route.id,
