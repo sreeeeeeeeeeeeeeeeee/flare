@@ -98,16 +98,6 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
     iconAnchor: [20, 40]
   });
 
-  // Identify which streets are evacuation routes
-  const evacuationStreetNames = data.evacuationRoutes
-    .filter(route => mistissiniStreets.some(street => street.name === route.routeName))
-    .map(route => route.routeName);
-    
-  // Find streets that are NOT evacuation routes
-  const nonEvacuationStreets = mistissiniStreets.filter(
-    street => !evacuationStreetNames.includes(street.name)
-  );
-
   return (
     <MapContainer 
       center={[mistissiniLocation.center.lat, mistissiniLocation.center.lng]} 
@@ -135,11 +125,11 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
         </Popup>
       </Marker>
       
-      {/* Show all streets as reference (thin gray lines) */}
-      {nonEvacuationStreets.map((street) => (
+      {/* First show all streets as reference (thin gray lines) */}
+      {mistissiniStreets.map((street) => (
         <Polyline
-          key={`street-${street.name}`}
-          positions={street.path as [number, number][]}
+          key={`street-base-${street.name}`}
+          positions={street.path}
           pathOptions={{
             color: '#94a3b8',
             weight: 2,
@@ -154,105 +144,75 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
         </Polyline>
       ))}
       
-      {/* Street evacuation routes */}
-      {data.evacuationRoutes
-        .filter(route => {
-          // Find the matching street 
-          return mistissiniStreets.some(street => street.name === route.routeName);
-        })
-        .map(route => {
-          // Get the corresponding street data
-          const street = mistissiniStreets.find(s => s.name === route.routeName);
-          
-          if (!street) return null;
-          
-          return (
-            <Polyline
-              key={`evacuation-${route.id}`}
-              positions={street.path as [number, number][]}
-              pathOptions={{
-                color: route.status === 'open' ? '#22c55e' : route.status === 'congested' ? '#f97316' : '#ef4444',
-                weight: 5,
-                opacity: 0.9,
-                lineCap: 'round',
-                lineJoin: 'round'
-              }}
-            >
-              <Popup>
-                <div className="text-sm font-medium">{route.routeName}</div>
-                <div className="text-xs">From: {route.startPoint} to {route.endPoint}</div>
-                <div className="text-xs">Status: {route.status}</div>
-                <div className="text-xs">Estimated Time: {route.estimatedTime} min</div>
-                <div className="text-xs">Transport: {route.transportMethods.join(', ')}</div>
-              </Popup>
-            </Polyline>
-          );
-        })
-      }
+      {/* Then show all highways as reference */}
+      {mistissiniHighways.map((highway) => (
+        <Polyline
+          key={`highway-base-${highway.name}`}
+          positions={highway.path}
+          pathOptions={{
+            color: '#64748b',
+            weight: 3,
+            opacity: 0.4,
+            dashArray: '10, 5'
+          }}
+        >
+          <Popup>
+            <div className="text-sm font-medium">{highway.name}</div>
+            <div className="text-xs">{highway.description}</div>
+          </Popup>
+        </Polyline>
+      ))}
       
-      {/* Highway evacuation routes */}
-      {data.evacuationRoutes
-        .filter(route => {
-          // Include only routes that are highways (don't match street names)
-          return !mistissiniStreets.some(street => street.name === route.routeName);
-        })
-        .map(route => {
-          // For highways and other non-street routes, see if we have a matching highway
-          const highway = mistissiniHighways.find(h => h.name === route.routeName);
-          
-          if (highway) {
-            // Use the actual highway path
-            return (
-              <Polyline
-                key={`highway-${route.id}`}
-                positions={highway.path as [number, number][]}
-                pathOptions={{
-                  color: route.status === 'open' ? '#22c55e' : route.status === 'congested' ? '#f97316' : '#ef4444',
-                  weight: 5,
-                  opacity: 0.9,
-                  dashArray: '10, 5' // Dashed line for highways
-                }}
-              >
-                <Popup>
-                  <div className="text-sm font-medium">{route.routeName}</div>
-                  <div className="text-xs">From: {route.startPoint} to {route.endPoint}</div>
-                  <div className="text-xs">Status: {route.status}</div>
-                  <div className="text-xs">Estimated Time: {route.estimatedTime} min</div>
-                  <div className="text-xs">Transport: {route.transportMethods.join(', ')}</div>
-                </Popup>
-              </Polyline>
-            );
-          } else {
-            // For any other routes that don't match streets or highways, use the geometry
-            const positions = route.geometry.coordinates.map(coord => [coord[1], coord[0]] as [number, number]);
-            
-            return (
-              <Polyline
-                key={`other-${route.id}`}
-                positions={positions}
-                pathOptions={{
-                  color: route.status === 'open' ? '#22c55e' : route.status === 'congested' ? '#f97316' : '#ef4444',
-                  weight: 4,
-                  opacity: 0.9
-                }}
-              >
-                <Popup>
-                  <div className="text-sm font-medium">{route.routeName || route.id}</div>
-                  <div className="text-xs">From: {route.startPoint} to {route.endPoint}</div>
-                  <div className="text-xs">Status: {route.status}</div>
-                  <div className="text-xs">Estimated Time: {route.estimatedTime} min</div>
-                  <div className="text-xs">Transport: {route.transportMethods.join(', ')}</div>
-                </Popup>
-              </Polyline>
-            );
+      {/* Highlight the street evacuation routes */}
+      {data.evacuationRoutes.map((route) => {
+        // Find the matching street or highway for this route
+        let path;
+        let isHighway = false;
+        
+        // First check if this is a street route
+        const matchingStreet = mistissiniStreets.find(s => s.name === route.routeName);
+        if (matchingStreet) {
+          path = matchingStreet.path;
+        } else {
+          // If not a street, check if it's a highway
+          const matchingHighway = mistissiniHighways.find(h => h.name === route.routeName);
+          if (matchingHighway) {
+            path = matchingHighway.path;
+            isHighway = true;
           }
-        })
-      }
+        }
+        
+        // Skip if we don't have a path for this route
+        if (!path) return null;
+        
+        return (
+          <Polyline
+            key={`evacuation-${route.id}`}
+            positions={path}
+            pathOptions={{
+              color: route.status === 'open' ? '#22c55e' : route.status === 'congested' ? '#f97316' : '#ef4444',
+              weight: 5,
+              opacity: 0.9,
+              lineCap: 'round',
+              lineJoin: 'round',
+              dashArray: isHighway ? '10, 5' : undefined
+            }}
+          >
+            <Popup>
+              <div className="text-sm font-medium">{route.routeName}</div>
+              <div className="text-xs">From: {route.startPoint} to {route.endPoint}</div>
+              <div className="text-xs">Status: {route.status}</div>
+              <div className="text-xs">Estimated Time: {route.estimatedTime} min</div>
+              <div className="text-xs">Transport: {route.transportMethods.join(', ')}</div>
+            </Popup>
+          </Polyline>
+        );
+      })}
       
       {/* Danger zones - Forest Fires */}
       {data.dangerZones.map((zone) => {
         // Convert polygon coordinates to [lat, lng] format for react-leaflet
-        const positions = zone.geometry.coordinates[0].map(coord => [coord[1], coord[0]] as [number, number]);
+        const positions = zone.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
         
         return (
           <Polygon

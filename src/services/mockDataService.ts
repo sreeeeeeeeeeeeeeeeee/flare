@@ -1,4 +1,3 @@
-
 import { MapDataType, EvacuationRouteType, DangerZoneType } from '@/types/emergency';
 import { mistissiniLocation, mistissiniRegions, mistissiniForestRegions, evacuationDestinations, mistissiniHighways, mistissiniStreets } from './mistissiniData';
 
@@ -55,69 +54,58 @@ const generateInitialForestFireZones = (count: number = 3): DangerZoneType[] => 
   return zones;
 };
 
-// Generate evacuation routes that follow actual Mistissini streets exactly
+// Generate evacuation routes that follow actual Mistissini streets
 const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
   
-  // Streets to use as evacuation routes
+  // Select specific streets to use as evacuation routes
   const streetsToUse = [
-    {
-      street: mistissiniStreets.find(s => s.name === "Main Street") || mistissiniStreets[0],
-      id: "route-main-street",
-      startPoint: "Main Street East",
-      endPoint: "Main Street West",
-      status: "open" as const
-    },
-    {
-      street: mistissiniStreets.find(s => s.name === "Saint John Street") || mistissiniStreets[1],
-      id: "route-saint-john",
-      startPoint: "Saint John Street North",
-      endPoint: "Saint John Street South",
-      status: "open" as const
-    },
-    {
-      street: mistissiniStreets.find(s => s.name === "Lakeshore Drive") || mistissiniStreets[2],
-      id: "route-lakeshore",
-      startPoint: "Eastern Shore",
-      endPoint: "Southern Shore",
-      status: "congested" as const
-    },
-    {
-      street: mistissiniStreets.find(s => s.name === "Northern Boulevard") || mistissiniStreets[3],
-      id: "route-northern",
-      startPoint: "Northern Mistissini",
-      endPoint: "Central Mistissini",
-      status: "open" as const
-    },
-    {
-      street: mistissiniStreets.find(s => s.name === "Southern Avenue") || mistissiniStreets[6],
-      id: "route-southern",
-      startPoint: "Southern Residential Area",
-      endPoint: "Central Mistissini",
-      status: "congested" as const
-    },
-    {
-      street: mistissiniStreets.find(s => s.name === "Western Route") || mistissiniStreets[7],
-      id: "route-western",
-      startPoint: "Western Mistissini",
-      endPoint: "Central Mistissini",
-      status: "open" as const
-    }
+    "Main Street",
+    "Saint John Street", 
+    "Lakeshore Drive",
+    "Northern Boulevard",
+    "Southern Avenue"
   ];
   
-  streetsToUse.forEach(item => {
-    if (item.street) {
+  // Create evacuation routes for each selected street
+  streetsToUse.forEach((streetName, index) => {
+    const street = mistissiniStreets.find(s => s.name === streetName);
+    
+    if (street) {
+      // Determine appropriate start/end points based on the street
+      let startPoint, endPoint;
+      
+      if (street.name === "Main Street") {
+        startPoint = "Eastern Mistissini";
+        endPoint = "Western Mistissini";
+      } else if (street.name === "Saint John Street") {
+        startPoint = "Northern Mistissini";
+        endPoint = "Southern Mistissini";
+      } else if (street.name === "Lakeshore Drive") {
+        startPoint = "Lake Shore";
+        endPoint = "Eastern Mistissini";
+      } else if (street.name === "Northern Boulevard") {
+        startPoint = "Northern Forest Area";
+        endPoint = "Central Mistissini";
+      } else if (street.name === "Southern Avenue") {
+        startPoint = "Southern Residential Area";
+        endPoint = "Central Mistissini";
+      } else {
+        startPoint = `${street.name} Start`;
+        endPoint = `${street.name} End`;
+      }
+      
       routes.push({
-        id: item.id,
-        startPoint: item.startPoint,
-        endPoint: item.endPoint,
-        status: item.status,
-        estimatedTime: item.street.path.length * 2, // Estimate travel time based on path length
+        id: `route-street-${index + 1}`,
+        startPoint,
+        endPoint,
+        status: Math.random() > 0.7 ? "congested" : "open",
+        estimatedTime: 5 + Math.floor(Math.random() * 10), // 5-15 minutes
         transportMethods: ['car', 'emergency', 'foot'],
-        routeName: item.street.name,
+        routeName: street.name,
         geometry: {
           type: 'LineString',
-          coordinates: item.street.path.map(point => [point[1], point[0]])
+          coordinates: street.path.map(point => [point[1], point[0]])
         }
       });
     }
@@ -130,21 +118,22 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
 const generateHighwayEvacuationRoutes = (): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
   
-  // Create evacuation routes that follow highway paths exactly
+  // Create evacuation routes for each highway
   mistissiniHighways.forEach((highway, index) => {
-    const destination = highway.path[highway.path.length - 1];
-    const destinationName = highway.name.includes("to ") 
-      ? highway.name.split("to ")[1].trim() 
-      : highway.description.includes("to ")
-        ? highway.description.split("to ")[1].trim()
-        : highway.name;
+    // Get the destination from the highway name or description
+    let destination = highway.name;
+    if (highway.name.includes("to ")) {
+      destination = highway.name.split("to ")[1].trim();
+    } else if (highway.description.includes("to ")) {
+      destination = highway.description.split("to ")[1].trim();
+    }
     
     routes.push({
       id: `route-highway-${index + 1}`,
       startPoint: "Mistissini",
-      endPoint: destinationName,
+      endPoint: destination,
       status: Math.random() > 0.7 ? "congested" : "open",
-      estimatedTime: Math.max(20, highway.path.length / 2), // Longer routes take more time
+      estimatedTime: 15 + Math.floor(Math.random() * 30), // 15-45 minutes for highways
       transportMethods: ['car', 'emergency'],
       routeName: highway.name,
       geometry: {
@@ -189,7 +178,7 @@ const generateDroneResponders = (dangerZones: DangerZoneType[]) => {
   return drones;
 };
 
-// Generate initial danger zones focused on Mistissini - now with even smaller zones
+// Generate initial danger zones focused on Mistissini
 const initialDangerZones = generateInitialForestFireZones(3);
 const initialDrones = generateDroneResponders(initialDangerZones);
 
