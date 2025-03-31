@@ -98,7 +98,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
     iconAnchor: [20, 40]
   });
 
-  // Display all streets as reference
+  // Find streets that are NOT evacuation routes
   const nonEvacuationStreets = mistissiniStreets.filter(
     street => !data.evacuationRoutes.some(route => route.routeName === street.name)
   );
@@ -149,9 +149,37 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
         </Polyline>
       ))}
       
-      {/* Evacuation routes */}
+      {/* Evacuation routes - now following the actual streets */}
       {data.evacuationRoutes.map((route) => {
-        // Convert coordinates to [lat, lng] format required by react-leaflet
+        // For street routes, use the exact street path
+        const streetMatch = mistissiniStreets.find(street => street.name === route.routeName);
+        
+        // If this is a street-based evacuation route, use the actual street path
+        if (streetMatch) {
+          return (
+            <Polyline
+              key={route.id}
+              positions={streetMatch.path as [number, number][]}
+              pathOptions={{
+                color: route.status === 'open' ? '#22c55e' : route.status === 'congested' ? '#f97316' : '#ef4444',
+                weight: 5,
+                opacity: 0.9,
+                lineCap: 'round',
+                lineJoin: 'round'
+              }}
+            >
+              <Popup>
+                <div className="text-sm font-medium">{route.routeName || route.id}</div>
+                <div className="text-xs">From: {route.startPoint} to {route.endPoint}</div>
+                <div className="text-xs">Status: {route.status}</div>
+                <div className="text-xs">Estimated Time: {route.estimatedTime} min</div>
+                <div className="text-xs">Transport: {route.transportMethods.join(', ')}</div>
+              </Popup>
+            </Polyline>
+          );
+        }
+        
+        // For highways/other routes, use the route geometry as before
         const positions = route.geometry.coordinates.map(coord => [coord[1], coord[0]] as [number, number]);
         
         return (
@@ -159,7 +187,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
             key={route.id}
             positions={positions}
             pathOptions={{
-              color: route.status === 'open' ? '#22c55e' : route.status === 'congested' ? '#f59e0b' : '#ef4444',
+              color: route.status === 'open' ? '#22c55e' : route.status === 'congested' ? '#f97316' : '#ef4444',
               weight: route.routeName?.includes("Route") || route.routeName?.includes("Road to") ? 5 : 4,
               opacity: 0.9
             }}
