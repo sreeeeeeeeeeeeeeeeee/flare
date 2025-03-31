@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Polyline, Popup } from "react-leaflet";
 import { EvacuationRouteType } from "@/types/emergency";
@@ -61,9 +60,6 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
     }
   }, [routes, standalone]);
 
-  // Ensure consistent unique keys for route rendering
-  const getUniqueKey = (routeId: string) => `evac-route-${routeId}-${Date.now()}`;
-
   // If standalone is true, this is being rendered outside a map context, so just render info
   if (standalone) {
     return (
@@ -102,7 +98,7 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
     <>
       {computedRoutes.map((route) => (
         <Polyline
-          key={getUniqueKey(route.id)}
+          key={`evac-route-${route.id}`}
           positions={route.path}
           pathOptions={{
             color: route.status === "open" ? "#22c55e" : route.status === "congested" ? "#f97316" : "#ef4444",

@@ -365,7 +365,7 @@ const initialData: MapDataType = {
 
 // Function to update an evacuation route's status
 const updateEvacuationRouteStatus = (routes: EvacuationRouteType[], index: number): EvacuationRouteType => {
-  // Just update the status
+  // Just update the status without changing the path
   const updatedRoute = { ...routes[index] };
   const statusOptions: Array<'open' | 'congested' | 'closed'> = ['open', 'congested', 'closed'];
   updatedRoute.status = statusOptions[Math.floor(Math.random() * statusOptions.length)];
@@ -451,39 +451,6 @@ const getUpdatedData = (): MapDataType => {
   if (Math.random() > 0.9 && data.responders.length > 6) {
     const indexToRemove = Math.floor(Math.random() * data.responders.length);
     data.responders.splice(indexToRemove, 1);
-  }
-  
-  // Update danger zones slightly to simulate fire movement (20% chance)
-  if (Math.random() > 0.8) {
-    data.dangerZones.forEach(zone => {
-      zone.geometry.coordinates[0].forEach((coord, index) => {
-        if (index > 0 && index < zone.geometry.coordinates[0].length - 1) {
-          coord[0] += (Math.random() - 0.5) * 0.003;
-          coord[1] += (Math.random() - 0.5) * 0.003;
-        }
-      });
-    });
-  }
-  
-  // Sometimes add a new small forest fire zone (15% chance, max 5 zones)
-  if (Math.random() > 0.85 && data.dangerZones.length < 5) {
-    const regionIndex = Math.floor(Math.random() * mistissiniRegions.length);
-    const newZone = generateForestFireZone(regionIndex, `zone-${Math.floor(Math.random() * 1000)}`);
-    data.dangerZones.push(newZone);
-    
-    // Add an alert about the new forest fire
-    const forestRegion = newZone.forestRegion || 'Mistissini Forest';
-    
-    data.alerts.unshift({
-      id: `alert-${Math.floor(Math.random() * 1000)}`,
-      severity: 'critical',
-      title: 'New Forest Fire',
-      message: `New forest fire detected in ${forestRegion} near ${mistissiniRegions[regionIndex].name}. Please avoid the area.`,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      location: forestRegion,
-      isNew: true,
-      visibility: 'all'
-    });
   }
   
   // Update evacuation routes (status changes only, path stays the same)

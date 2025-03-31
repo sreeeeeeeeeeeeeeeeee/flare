@@ -109,6 +109,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
       scrollWheelZoom={true}
       doubleClickZoom={true}
       dragging={true}
+      key="main-map-container" // Fixed key helps with re-renders
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -119,6 +120,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
       <Marker 
         position={[mistissiniLocation.center.lat, mistissiniLocation.center.lng]} 
         icon={locationMarker}
+        key="mistissini-marker"
       >
         <Popup>
           <div className="text-sm font-medium">Mistissini</div>
@@ -174,7 +176,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
         
         return (
           <Polygon
-            key={zone.id}
+            key={`zone-${zone.id}`}
             positions={positions}
             pathOptions={{
               fillColor: '#ea384c',
@@ -204,7 +206,7 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
       {/* Responders */}
       {data.responders.map((responder) => (
         <Marker
-          key={responder.id}
+          key={`responder-${responder.id}`}
           position={[responder.position.latitude, responder.position.longitude]}
           icon={createResponderIcon(responder.type)}
         >
