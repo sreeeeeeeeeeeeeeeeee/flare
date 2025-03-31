@@ -40,6 +40,15 @@ export const generateUpdatedData = (initialData: MapDataType): MapDataType => {
     data.evacuationRoutes[dangerZone1RouteIndex].status = "congested";
   }
   
+  // Ensure the Chibougamau route is always open
+  const chibougamauRouteIndex = data.evacuationRoutes.findIndex(
+    route => route.endPoint === "Chibougamau"
+  );
+  
+  if (chibougamauRouteIndex !== -1) {
+    data.evacuationRoutes[chibougamauRouteIndex].status = "open";
+  }
+  
   // Generate new alert
   const newAlert = generateNewAlert(data.evacuationRoutes);
   if (newAlert) {

@@ -54,11 +54,20 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
             }
             
             // Make the first danger zone route consistently congested
-            if (route.id === "route-evacuation-1" || 
+            if (route.id.includes("evacuation-1") || 
                 (route.start === "Danger Zone 1" && route.end === "Community Center")) {
               return {
                 ...route,
                 status: "congested", // Always keep this specific route congested
+                updatedAt: new Date()
+              };
+            }
+            
+            // Ensure Chibougamau route is always open
+            if (route.end === "Chibougamau") {
+              return {
+                ...route,
+                status: "open", // Always keep this specific route open
                 updatedAt: new Date()
               };
             }

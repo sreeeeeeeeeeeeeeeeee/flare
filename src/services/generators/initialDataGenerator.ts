@@ -27,13 +27,19 @@ export const generateInitialData = (): MapDataType => {
   ];
   
   // Make the first danger zone evacuation route congested
-  if (allEvacuationRoutes.length > 2) {
-    const routeToMakeCongested = allEvacuationRoutes.find(route => 
-      route.id.includes('evacuation') && route.id.includes('1'));
-    
-    if (routeToMakeCongested) {
-      routeToMakeCongested.status = 'congested';
-    }
+  const dangerZone1Route = allEvacuationRoutes.find(route => 
+    (route.startPoint === "Danger Zone 1" && route.endPoint === "Community Center"));
+  
+  if (dangerZone1Route) {
+    dangerZone1Route.status = 'congested';
+  }
+  
+  // Make sure the Chibougamau route is open
+  const chibougamauRoute = allEvacuationRoutes.find(route => 
+    route.endPoint === "Chibougamau");
+  
+  if (chibougamauRoute) {
+    chibougamauRoute.status = 'open';
   }
   
   return {

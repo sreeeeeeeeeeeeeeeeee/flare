@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { TileLayer, useMap } from 'react-leaflet';
 import { Route } from '@/types/mapTypes';
@@ -54,11 +53,22 @@ const EvacuationMap = () => {
   // Status updates every 2 minutes
   useEffect(() => {
     const interval = setInterval(() => {
-      setRoutes(prev => prev.map(route => ({
-        ...route,
-        status: getRandomStatus(),
-        updatedAt: new Date()
-      })));
+      setRoutes(prev => prev.map(route => {
+        // Keep the route to Chibougamau open
+        if (route.end.toLowerCase() === 'chibougamau') {
+          return {
+            ...route,
+            status: 'open',
+            updatedAt: new Date()
+          };
+        }
+        
+        return {
+          ...route,
+          status: getRandomStatus(),
+          updatedAt: new Date()
+        };
+      }));
     }, 120000);
 
     return () => clearInterval(interval);
