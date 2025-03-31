@@ -2,7 +2,7 @@
 import React from 'react';
 import { Polyline, useMap } from 'react-leaflet';
 import { Route } from '@/types/mapTypes';
-import { getRouteColor } from '@/utils/mapUtils';
+import { statusConfig } from '@/utils/routeStatusConfig';
 import RoutePopup from './RoutePopup';
 
 // Check if we're inside a Leaflet map context
@@ -33,7 +33,7 @@ const RoutePolyline: React.FC<RoutePolylineProps> = ({ route }) => {
       key={route.id}
       positions={route.path}
       pathOptions={{
-        color: getRouteColor(route.status),
+        color: statusConfig[route.status].color,
         weight: 6,
         opacity: route.status === 'closed' ? 0.7 : 0.9,
         lineCap: 'round',

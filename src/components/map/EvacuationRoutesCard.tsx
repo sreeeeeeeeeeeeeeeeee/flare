@@ -7,7 +7,7 @@ import { formatDistance } from '@/utils/mapUtils';
 // Status configuration
 const statusConfig = {
   open: { text: "ACTIVE", bg: "bg-green-100", border: "border-green-300", textColor: "text-green-800" },
-  congested: { text: "CONGESTED", bg: "bg-orange-100", border: "border-orange-300", textColor: "text-orange-800" },
+  congested: { text: "CONGESTED", bg: "bg-amber-100", border: "border-amber-300", textColor: "text-amber-800" },
   closed: { text: "CLOSED", bg: "bg-red-100", border: "border-red-300", textColor: "text-red-800" }
 };
 
