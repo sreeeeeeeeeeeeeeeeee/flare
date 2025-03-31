@@ -9,7 +9,6 @@ type Route = {
   status: RouteStatus;
   start: string;
   end: string;
-  color: string;
   updatedAt: Date;
 };
 
@@ -99,9 +98,9 @@ const EvacuationMap = () => {
   useEffect(() => {
     const initializeRoutes = async () => {
       const routeDefinitions = [
-        { id: 'mistissini-dropose', start: 'mistissini', end: 'dropose', color: '#3366ff' },
-        { id: 'dropose-hospital', start: 'dropose', end: 'hospital', color: '#ff3333' },
-        { id: 'school-chibougamau', start: 'school', end: 'chibougamau', color: '#33cc33' }
+        { id: 'mistissini-dropose', start: 'mistissini', end: 'dropose' },
+        { id: 'dropose-hospital', start: 'dropose', end: 'hospital' },
+        { id: 'school-chibougamau', start: 'school', end: 'chibougamau' }
       ];
 
       const calculatedRoutes: Route[] = [];
@@ -147,6 +146,20 @@ const EvacuationMap = () => {
     return rand < 0.7 ? 'open' : rand < 0.9 ? 'congested' : 'closed';
   };
 
+  // Get route color based on status
+  const getRouteColor = (status: RouteStatus): string => {
+    switch (status) {
+      case 'open':
+        return '#22c55e'; // Green
+      case 'congested':
+        return '#f97316'; // Orange
+      case 'closed':
+        return '#ef4444'; // Red
+      default:
+        return '#22c55e'; // Default to green
+    }
+  };
+
   if (isLoading) {
     return <div className="loading">Calculating precise road routes...</div>;
   }
@@ -158,9 +171,9 @@ const EvacuationMap = () => {
           key={route.id}
           positions={route.path}
           pathOptions={{
-            color: route.color,
+            color: getRouteColor(route.status),
             weight: 6,
-            opacity: 0.9,
+            opacity: route.status === 'closed' ? 0.7 : 0.9,
             lineCap: 'round',
             lineJoin: 'round',
             dashArray: route.status === 'closed' ? '10, 6' : 
