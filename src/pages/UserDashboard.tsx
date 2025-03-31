@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -88,7 +87,7 @@ const UserDashboard = () => {
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <VideoFeed currentFeed={mapData.videoFeeds[0]} />
-              {/* Use standalone mode for evacuation routes when not inside a MapContainer */}
+              {/* Make sure to use standalone mode for evacuation routes when not inside a MapContainer */}
               <EvacuationRoutes routes={mapData.evacuationRoutes} standalone={true} />
             </div>
           </div>

@@ -1,19 +1,33 @@
 
-/**
- * Route polyline component
- */
-
 import React from 'react';
-import { Polyline } from 'react-leaflet';
+import { Polyline, useMap } from 'react-leaflet';
 import { Route } from '@/types/mapTypes';
 import { getRouteColor } from '@/utils/mapUtils';
 import RoutePopup from './RoutePopup';
+
+// Check if we're inside a Leaflet map context
+const useIsInMapContainer = () => {
+  try {
+    // This will throw if we're not in a MapContainer
+    useMap();
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
 
 interface RoutePolylineProps {
   route: Route;
 }
 
 const RoutePolyline: React.FC<RoutePolylineProps> = ({ route }) => {
+  const isInMapContainer = useIsInMapContainer();
+  
+  // If not in a map container, don't render Leaflet components
+  if (!isInMapContainer) {
+    return null;
+  }
+  
   return (
     <Polyline
       key={route.id}

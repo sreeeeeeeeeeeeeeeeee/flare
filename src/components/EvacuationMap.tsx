@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { TileLayer, useMap } from 'react-leaflet';
 import { Route } from '@/types/mapTypes';
 import { LOCATIONS } from '@/utils/mapUtils';
 import { getRandomStatus } from '@/utils/mapUtils';
@@ -8,6 +8,17 @@ import { initializeRoutes } from '@/services/routeService';
 import RouteStatusLegend from './map/RouteStatusLegend';
 import RoutePolyline from './map/RoutePolyline';
 import { Skeleton } from './ui/skeleton';
+
+// Check if we're inside a Leaflet map context
+const useIsInMapContainer = () => {
+  try {
+    // This will throw if we're not in a MapContainer
+    useMap();
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
 
 // Loading indicator component that works within the map container
 const LoadingOverlay = () => {
@@ -21,6 +32,7 @@ const LoadingOverlay = () => {
 const EvacuationMap = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isInMapContainer = useIsInMapContainer();
 
   // Initialize routes
   useEffect(() => {
@@ -51,6 +63,18 @@ const EvacuationMap = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  // If we're not inside a MapContainer, show a standalone placeholder instead
+  if (!isInMapContainer) {
+    return (
+      <div className="relative h-full w-full bg-gray-900 rounded-md overflow-hidden flex flex-col">
+        <div className="p-4 bg-gray-800 text-white font-semibold">Evacuation Routes</div>
+        <div className="flex-grow p-4 text-white/80 flex justify-center items-center">
+          Evacuation routes data is available but can only be displayed on a map.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative h-full w-full bg-gray-900 rounded-md overflow-hidden flex flex-col">
