@@ -1,6 +1,6 @@
 
 import { MapDataType, ResponderType } from '@/types/emergency';
-import { mistissiniRegions } from '../mistissiniData';
+import { mistissiniRegions } from '../mistissini'; // Updated import path
 import { updateResponderPositions } from './responderGenerator';
 import { updateEvacuationRouteStatus } from './evacuationRouteGenerator';
 import { generateNewAlert, updateAlerts } from './alertGenerator';

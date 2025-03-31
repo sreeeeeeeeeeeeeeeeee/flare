@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { useMap } from 'react-leaflet';
 import { MapDataType } from '@/types/emergency';
-import { mistissiniLocation } from '@/services/mistissiniData';
+import { mistissiniLocation } from '@/services/mistissini'; // Updated import path
 
 interface MapUpdaterProps {
   data: MapDataType;
