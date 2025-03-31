@@ -39,6 +39,100 @@ function MapUpdater({ data }: { data: MapDataType }) {
   return null;
 }
 
+// GraphHopper API integration for evacuation routes
+const GRAPH_HOPPER_API_KEY = "YOUR_API_KEY"; // Replace with your actual API key
+
+type RouteCoordinates = {
+  id: string;
+  path: [number, number][];
+  status: string;
+  routeName: string;
+  startPoint: string;
+  endPoint: string;
+  estimatedTime: number;
+  transportMethods: string[];
+};
+
+// Component for managing evacuation routes using GraphHopper API
+function EvacuationRoutes({ routes }: { routes: any[] }) {
+  const [computedRoutes, setComputedRoutes] = useState<RouteCoordinates[]>([]);
+
+  const fetchRoute = async (startLat: number, startLng: number, endLat: number, endLng: number) => {
+    const url = `https://graphhopper.com/api/1/route?point=${startLat},${startLng}&point=${endLat},${endLng}&vehicle=car&locale=en&key=${GRAPH_HOPPER_API_KEY}&points_encoded=false`;
+
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      return data.paths[0]?.points.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
+    } catch (error) {
+      console.error("Error fetching route:", error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    // For demo purposes, convert Mistissini streets to coordinates
+    // In a real app, you would have actual lat/lng for start and end points
+    const getRoutes = async () => {
+      // Convert data from our format to API-compatible format
+      const newRoutes = await Promise.all(
+        routes.map(async (route) => {
+          // Using Mistissini locations as start/end for demo
+          // In a real app, these would come from your data source
+          const startLat = mistissiniLocation.center.lat - 0.01 + Math.random() * 0.005;
+          const startLng = mistissiniLocation.center.lng - 0.01 + Math.random() * 0.005;
+          const endLat = mistissiniLocation.center.lat - 0.005 + Math.random() * 0.01;
+          const endLng = mistissiniLocation.center.lng - 0.005 + Math.random() * 0.01;
+          
+          // Fetch the actual route from the API
+          const path = await fetchRoute(startLat, startLng, endLat, endLng);
+          
+          return { 
+            id: route.id, 
+            path, 
+            status: route.status,
+            routeName: route.routeName,
+            startPoint: route.startPoint,
+            endPoint: route.endPoint,
+            estimatedTime: route.estimatedTime,
+            transportMethods: route.transportMethods
+          };
+        })
+      );
+      
+      // Filter out any failed requests and store in state
+      setComputedRoutes(newRoutes.filter((r) => r.path));
+    };
+
+    getRoutes();
+  }, [routes]);
+
+  return (
+    <>
+      {computedRoutes.map((route) => (
+        <Polyline
+          key={`evac-route-${route.id}`}
+          positions={route.path}
+          pathOptions={{
+            color: route.status === "open" ? "#22c55e" : route.status === "congested" ? "#f97316" : "#ef4444",
+            weight: 5,
+            opacity: 0.9,
+            lineCap: "round",
+          }}
+        >
+          <Popup>
+            <div className="text-sm font-medium">{route.routeName}</div>
+            <div className="text-xs">From: {route.startPoint} to {route.endPoint}</div>
+            <div className="text-xs">Status: {route.status}</div>
+            <div className="text-xs">Estimated Time: {route.estimatedTime} min</div>
+            <div className="text-xs">Transport: {route.transportMethods.join(', ')}</div>
+          </Popup>
+        </Polyline>
+      ))}
+    </>
+  );
+}
+
 type EmergencyMapProps = {
   data: MapDataType;
   isLoading: boolean;
@@ -163,56 +257,8 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
         </Polyline>
       ))}
       
-      {/* Highlight the street evacuation routes that follow existing streets exactly */}
-      {data.evacuationRoutes.map((route) => {
-        // Find the matching street or highway for this route
-        let path;
-        let isHighway = false;
-        
-        // First check if this is a street route
-        const matchingStreet = mistissiniStreets.find(s => s.name === route.routeName);
-        if (matchingStreet) {
-          path = matchingStreet.path;
-        } else {
-          // If not a street, check if it's a highway
-          const matchingHighway = mistissiniHighways.find(h => h.name === route.routeName);
-          if (matchingHighway) {
-            path = matchingHighway.path;
-            isHighway = true;
-          } else {
-            // If we don't have a matching street or highway, but we have geometry data
-            // we can use that directly - however this should be rare since we want routes
-            // to follow streets exactly
-            path = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-          }
-        }
-        
-        // Skip if we don't have a path for this route
-        if (!path || path.length === 0) return null;
-        
-        return (
-          <Polyline
-            key={`evacuation-${route.id}`}
-            positions={path as [number, number][]}
-            pathOptions={{
-              color: route.status === 'open' ? '#22c55e' : route.status === 'congested' ? '#f97316' : '#ef4444',
-              weight: 5,
-              opacity: 0.9,
-              lineCap: 'round',
-              lineJoin: 'round',
-              dashArray: isHighway ? '10, 5' : undefined
-            }}
-          >
-            <Popup>
-              <div className="text-sm font-medium">{route.routeName}</div>
-              <div className="text-xs">From: {route.startPoint} to {route.endPoint}</div>
-              <div className="text-xs">Status: {route.status}</div>
-              <div className="text-xs">Estimated Time: {route.estimatedTime} min</div>
-              <div className="text-xs">Transport: {route.transportMethods.join(', ')}</div>
-            </Popup>
-          </Polyline>
-        );
-      })}
+      {/* Use GraphHopper API to generate evacuation routes */}
+      <EvacuationRoutes routes={data.evacuationRoutes} />
       
       {/* Danger zones - Forest Fires */}
       {data.dangerZones.map((zone) => {
