@@ -82,7 +82,8 @@ const Index = () => {
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <VideoFeed currentFeed={mapData.videoFeeds[0]} />
-              <EvacuationRoutes routes={mapData.evacuationRoutes} />
+              {/* Use standalone mode for EvacuationRoutes when outside MapContainer */}
+              <EvacuationRoutes routes={mapData.evacuationRoutes} standalone={true} />
             </div>
           </div>
           

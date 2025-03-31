@@ -164,8 +164,8 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
         </Polyline>
       ))}
       
-      {/* Use GraphHopper API to generate evacuation routes */}
-      <EvacuationRoutes routes={data.evacuationRoutes} />
+      {/* Use GraphHopper API to generate evacuation routes - explicitly set standalone to false */}
+      <EvacuationRoutes routes={data.evacuationRoutes} standalone={false} />
       
       {/* Danger zones - Forest Fires */}
       {data.dangerZones.map((zone) => {
