@@ -1,12 +1,21 @@
 
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import { Route } from '@/types/mapTypes';
 import { LOCATIONS } from '@/utils/mapUtils';
 import { getRandomStatus } from '@/utils/mapUtils';
 import { initializeRoutes } from '@/services/routeService';
 import RouteStatusLegend from './map/RouteStatusLegend';
 import RoutePolyline from './map/RoutePolyline';
+
+// Loading indicator component that works within MapContainer
+const LoadingOverlay = () => {
+  return (
+    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[1000] bg-background/80 backdrop-blur-sm p-4 rounded-md shadow-md border border-border">
+      <div className="loading text-lg">Calculating precise road routes...</div>
+    </div>
+  );
+};
 
 const EvacuationMap = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -42,22 +51,19 @@ const EvacuationMap = () => {
     return () => clearInterval(interval);
   }, []);
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="loading text-lg mb-2">Calculating precise road routes...</div>
-        <RouteStatusLegend />
-      </div>
-    );
-  }
-
   return (
-    <>
+    <div className="relative h-full w-full">
+      {/* Always show the legend regardless of loading state */}
       <RouteStatusLegend />
-      {routes.map(route => (
+      
+      {/* Show loading overlay if still calculating routes */}
+      {isLoading && <LoadingOverlay />}
+      
+      {/* Render routes when they're available */}
+      {!isLoading && routes.map(route => (
         <RoutePolyline key={route.id} route={route} />
       ))}
-    </>
+    </div>
   );
 };
 
