@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -40,7 +39,7 @@ function MapUpdater({ data }: { data: MapDataType }) {
 }
 
 // GraphHopper API integration for evacuation routes
-const GRAPH_HOPPER_API_KEY = "YOUR_API_KEY"; // Replace with your actual API key
+const GRAPH_HOPPER_API_KEY = "5adb1e1c-29a2-4293-81c1-1c81779679bb"; // Using the provided API key
 
 type RouteCoordinates = {
   id: string;
