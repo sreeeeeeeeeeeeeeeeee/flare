@@ -47,7 +47,7 @@ export const initializeRoutes = async (
         [50.4230, -73.8670],
         [50.4235, -73.8640],
         [50.4240, -73.8610]
-      ],
+      ] as [number, number][],
       status: 'open',
       start: 'Mistissini Center',
       end: 'Eastern Mistissini',
@@ -62,7 +62,7 @@ export const initializeRoutes = async (
         [50.4215, -73.8685],
         [50.4200, -73.8685],
         [50.4185, -73.8685]
-      ],
+      ] as [number, number][],
       status: 'congested',
       start: 'Northern Mistissini',
       end: 'Southern Mistissini',
@@ -70,7 +70,7 @@ export const initializeRoutes = async (
     },
     {
       id: 'route-3',
-      path: mistissiniHighways[0].path.slice(0, 10),
+      path: mistissiniHighways[0].path.slice(0, 10) as [number, number][],
       status: 'closed',
       start: 'Mistissini',
       end: 'Chibougamau Highway',

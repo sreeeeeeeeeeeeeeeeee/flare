@@ -10,14 +10,14 @@ const initialData = generateInitialData();
 const fixedEvacuationRoutes = [
   {
     id: 'route-1',
-    type: 'street',
-    status: 'open',
+    type: 'street' as const,
+    status: 'open' as const,
     startPoint: 'Mistissini Center',
     endPoint: 'Eastern Mistissini',
-    estimatedTime: 5, // Added required field in minutes
-    transportMethods: ['car', 'emergency'] as Array<'car' | 'foot' | 'emergency'>, // Added required field
+    estimatedTime: 5,
+    transportMethods: ['car', 'emergency'] as Array<'car' | 'foot' | 'emergency'>,
     geometry: {
-      type: 'LineString',
+      type: 'LineString' as const,
       coordinates: [
         [-73.8760, 50.4215],
         [-73.8730, 50.4220],
@@ -30,14 +30,14 @@ const fixedEvacuationRoutes = [
   },
   {
     id: 'route-2',
-    type: 'street',
-    status: 'congested',
+    type: 'street' as const,
+    status: 'congested' as const,
     startPoint: 'Northern Mistissini',
     endPoint: 'Southern Mistissini',
-    estimatedTime: 8, // Added required field in minutes
-    transportMethods: ['car', 'foot', 'emergency'] as Array<'car' | 'foot' | 'emergency'>, // Added required field
+    estimatedTime: 8,
+    transportMethods: ['car', 'foot', 'emergency'] as Array<'car' | 'foot' | 'emergency'>,
     geometry: {
-      type: 'LineString',
+      type: 'LineString' as const,
       coordinates: [
         [-73.8685, 50.4260],
         [-73.8685, 50.4245],
@@ -50,14 +50,14 @@ const fixedEvacuationRoutes = [
   },
   {
     id: 'route-3',
-    type: 'highway',
-    status: 'closed',
+    type: 'highway' as const,
+    status: 'closed' as const,
     startPoint: 'Mistissini',
     endPoint: 'Chibougamau Highway',
-    estimatedTime: 15, // Added required field in minutes
-    transportMethods: ['car', 'emergency'] as Array<'car' | 'foot' | 'emergency'>, // Added required field
+    estimatedTime: 15,
+    transportMethods: ['car', 'emergency'] as Array<'car' | 'foot' | 'emergency'>,
     geometry: {
-      type: 'LineString',
+      type: 'LineString' as const,
       coordinates: [
         [-73.8640, 50.4230],
         [-73.8620, 50.4300],
