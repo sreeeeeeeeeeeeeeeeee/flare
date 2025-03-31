@@ -26,6 +26,16 @@ export const generateInitialData = (): MapDataType => {
     ...generateHighwayEvacuationRoutes()
   ];
   
+  // Make the first danger zone evacuation route congested
+  if (allEvacuationRoutes.length > 2) {
+    const routeToMakeCongested = allEvacuationRoutes.find(route => 
+      route.id.includes('evacuation') && route.id.includes('1'));
+    
+    if (routeToMakeCongested) {
+      routeToMakeCongested.status = 'congested';
+    }
+  }
+  
   return {
     responders: initialResponders,
     dangerZones: initialDangerZones,

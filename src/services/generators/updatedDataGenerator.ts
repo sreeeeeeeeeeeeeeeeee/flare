@@ -30,6 +30,16 @@ export const generateUpdatedData = (initialData: MapDataType): MapDataType => {
     data.evacuationRoutes[routeIndex] = updateEvacuationRouteStatus(data.evacuationRoutes, routeIndex);
   }
   
+  // Ensure the danger zone 1 evacuation route is always congested
+  const dangerZone1RouteIndex = data.evacuationRoutes.findIndex(
+    route => route.id === "route-evacuation-1" || 
+    (route.startPoint === "Danger Zone 1" && route.endPoint === "Community Center")
+  );
+  
+  if (dangerZone1RouteIndex !== -1) {
+    data.evacuationRoutes[dangerZone1RouteIndex].status = "congested";
+  }
+  
   // Generate new alert
   const newAlert = generateNewAlert(data.evacuationRoutes);
   if (newAlert) {

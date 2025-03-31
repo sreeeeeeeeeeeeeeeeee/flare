@@ -72,7 +72,7 @@ export const generateStreetEvacuationRoutes = (dangerZones: DangerZoneType[] = [
         id: `route-evacuation-${zoneIndex + 1}`,
         startPoint,
         endPoint,
-        status: 'open', // Start as open, will be updated dynamically
+        status: zoneIndex === 0 ? 'congested' : 'open', // Make the first danger zone route congested
         estimatedTime: 8 + Math.floor(Math.random() * 7), // 8-15 minutes
         transportMethods: ['car', 'emergency', 'foot'],
         routeName: `${street.name} Evacuation Route`,
@@ -125,6 +125,13 @@ export const updateEvacuationRouteStatus = (routes: EvacuationRouteType[], index
   if (updatedRoute.startPoint === "Lake Shore" && updatedRoute.endPoint === "Eastern Mistissini") {
     // This ensures the Lake Shore route has a consistent status
     updatedRoute.status = "open";
+    return updatedRoute;
+  }
+  
+  // Make the first danger zone evacuation route consistently congested
+  if (updatedRoute.id === "route-evacuation-1" || 
+      (updatedRoute.startPoint === "Danger Zone 1" && updatedRoute.endPoint === "Community Center")) {
+    updatedRoute.status = "congested";
     return updatedRoute;
   }
   
