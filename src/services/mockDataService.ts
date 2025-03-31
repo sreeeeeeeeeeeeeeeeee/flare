@@ -1,3 +1,4 @@
+
 import { MapDataType, EvacuationRouteType, DangerZoneType } from '@/types/emergency';
 import { mistissiniLocation, mistissiniRegions, mistissiniForestRegions, evacuationDestinations, mistissiniHighways, mistissiniStreets } from './mistissiniData';
 
@@ -105,19 +106,21 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
   ];
   
   streetsToUse.forEach(item => {
-    routes.push({
-      id: item.id,
-      startPoint: item.startPoint,
-      endPoint: item.endPoint,
-      status: item.status,
-      estimatedTime: item.street.path.length * 2, // Estimate travel time based on path length
-      transportMethods: ['car', 'emergency', 'foot'],
-      routeName: item.street.name,
-      geometry: {
-        type: 'LineString',
-        coordinates: item.street.path.map(point => [point[1], point[0]])
-      }
-    });
+    if (item.street) {
+      routes.push({
+        id: item.id,
+        startPoint: item.startPoint,
+        endPoint: item.endPoint,
+        status: item.status,
+        estimatedTime: item.street.path.length * 2, // Estimate travel time based on path length
+        transportMethods: ['car', 'emergency', 'foot'],
+        routeName: item.street.name,
+        geometry: {
+          type: 'LineString',
+          coordinates: item.street.path.map(point => [point[1], point[0]])
+        }
+      });
+    }
   });
   
   return routes;
