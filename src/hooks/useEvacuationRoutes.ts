@@ -55,9 +55,11 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
             const mainStreet = mistissiniStreets.find(street => street.name === "Main Street");
             if (mainStreet && mainStreet.path) {
               console.log("Using fallback path for open route:", mainStreet.path);
+              // Explicitly cast the path to [number, number][] to fix type error
+              const typedPath = mainStreet.path as [number, number][];
               enhancedRoutes.push({
                 id: route.id,
-                path: mainStreet.path,
+                path: typedPath,
                 status: 'open', // Ensure it's always open
                 start: route.startPoint,
                 end: route.endPoint,
@@ -67,9 +69,11 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
           } else if (route.id === 'route-2') {
             const saintJohnStreet = mistissiniStreets.find(street => street.name === "Saint John Street");
             if (saintJohnStreet && saintJohnStreet.path) {
+              // Explicitly cast the path to [number, number][] to fix type error
+              const typedPath = saintJohnStreet.path as [number, number][];
               enhancedRoutes.push({
                 id: route.id,
-                path: saintJohnStreet.path,
+                path: typedPath,
                 status: route.status,
                 start: route.startPoint,
                 end: route.endPoint,
@@ -79,9 +83,11 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
           } else if (route.id === 'route-3') {
             const highway = mistissiniHighways.find(highway => highway.name === "Route 167 to Chibougamau");
             if (highway && highway.path) {
+              // Explicitly cast the path to [number, number][] to fix type error
+              const typedPath = highway.path.slice(0, 15) as [number, number][];
               enhancedRoutes.push({
                 id: route.id,
-                path: highway.path.slice(0, 15) as [number, number][],
+                path: typedPath,
                 status: route.status,
                 start: route.startPoint,
                 end: route.endPoint,
@@ -89,6 +95,24 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
               });
             }
           }
+        }
+      }
+      
+      // Ensure the open route (route-1) is always in the enhanced routes
+      if (!enhancedRoutes.some(r => r.id === 'route-1')) {
+        const mainStreet = mistissiniStreets.find(street => street.name === "Main Street");
+        if (mainStreet && mainStreet.path) {
+          console.log("Forcing addition of open route");
+          // Explicitly cast the path to [number, number][] to fix type error
+          const typedPath = mainStreet.path as [number, number][];
+          enhancedRoutes.push({
+            id: 'route-1',
+            path: typedPath,
+            status: 'open',
+            start: 'Lake Shore',
+            end: 'Eastern Mistissini',
+            updatedAt: new Date()
+          });
         }
       }
       

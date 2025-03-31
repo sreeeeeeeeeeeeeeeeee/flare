@@ -99,9 +99,11 @@ export const initializeRoutes = async (
         const mainStreet = mistissiniStreets.find(street => street.name === "Main Street");
         if (mainStreet) {
           console.log("Using Main Street for open route");
+          // Explicitly cast to [number, number][] to fix type error
+          const typedPath = mainStreet.path as [number, number][];
           calculatedRoutes.push({
             id: routeDef.id,
-            path: mainStreet.path,
+            path: typedPath,
             status: 'open', // Always ensure this route is open
             start: routeDef.start,
             end: routeDef.end,
@@ -109,23 +111,30 @@ export const initializeRoutes = async (
           });
         }
       } else if (routeDef.id === 'route-2') {
-        calculatedRoutes.push({
-          id: routeDef.id,
-          path: mistissiniStreets.find(street => street.name === "Saint John Street")?.path as [number, number][],
-          status: routeDef.status,
-          start: routeDef.start,
-          end: routeDef.end,
-          updatedAt: new Date()
-        });
+        const saintJohnPath = mistissiniStreets.find(street => street.name === "Saint John Street")?.path;
+        if (saintJohnPath) {
+          calculatedRoutes.push({
+            id: routeDef.id,
+            path: saintJohnPath as [number, number][],
+            status: routeDef.status,
+            start: routeDef.start,
+            end: routeDef.end,
+            updatedAt: new Date()
+          });
+        }
       } else if (routeDef.id === 'route-3') {
-        calculatedRoutes.push({
-          id: routeDef.id,
-          path: mistissiniHighways.find(highway => highway.name === "Route 167 to Chibougamau")?.path.slice(0, 15) as [number, number][],
-          status: routeDef.status,
-          start: routeDef.start,
-          end: routeDef.end,
-          updatedAt: new Date()
-        });
+        const highwayPath = mistissiniHighways.find(highway => 
+          highway.name === "Route 167 to Chibougamau")?.path.slice(0, 15);
+        if (highwayPath) {
+          calculatedRoutes.push({
+            id: routeDef.id,
+            path: highwayPath as [number, number][],
+            status: routeDef.status,
+            start: routeDef.start,
+            end: routeDef.end,
+            updatedAt: new Date()
+          });
+        }
       }
     }
   }
@@ -135,9 +144,11 @@ export const initializeRoutes = async (
     // If route-1 is missing, add it with predefined path
     const mainStreet = mistissiniStreets.find(street => street.name === "Main Street");
     if (mainStreet) {
+      // Explicitly cast to [number, number][] to fix type error
+      const typedPath = mainStreet.path as [number, number][];
       calculatedRoutes.push({
         id: 'route-1',
-        path: mainStreet.path,
+        path: typedPath,
         status: 'open',
         start: 'Lake Shore',
         end: 'Eastern Mistissini',

@@ -45,6 +45,28 @@ const EvacuationMap = () => {
         // Initialize routes with fixed statuses
         const calculatedRoutes = await initializeRoutes(routeDefinitions, LOCATIONS);
         
+        // Ensure route-1 (open route) is present in the routes
+        let hasOpenRoute = calculatedRoutes.some(route => route.id === 'route-1');
+        
+        if (!hasOpenRoute) {
+          console.warn("Open route not found in calculated routes, adding manually");
+          
+          // Import mistissini streets if not already included
+          const { mistissiniStreets } = await import('@/services/mistissini');
+          
+          const mainStreet = mistissiniStreets.find(street => street.name === "Main Street");
+          if (mainStreet) {
+            calculatedRoutes.push({
+              id: 'route-1',
+              path: mainStreet.path as [number, number][],
+              status: 'open',
+              start: 'Lake Shore',
+              end: 'Eastern Mistissini',
+              updatedAt: new Date()
+            });
+          }
+        }
+        
         if (calculatedRoutes && calculatedRoutes.length > 0) {
           console.log("Setting routes:", calculatedRoutes);
           setRoutes(calculatedRoutes);
@@ -84,10 +106,20 @@ const EvacuationMap = () => {
       {/* Loading state */}
       {isLoading && <LoadingOverlay />}
       
-      {/* Render routes when available */}
-      {routes.map(route => (
-        <RoutePolyline key={route.id} route={route} />
-      ))}
+      {/* Render routes when available - prioritizing open route first for better visibility */}
+      {routes
+        .sort((a, b) => {
+          // Sort so the open route (route-1) is drawn first, then congested, then closed
+          if (a.id === 'route-1') return -1;
+          if (b.id === 'route-1') return 1;
+          if (a.status === 'open') return -1;
+          if (b.status === 'open') return 1;
+          return 0;
+        })
+        .map(route => (
+          <RoutePolyline key={route.id} route={route} />
+        ))
+      }
     </>
   );
 };

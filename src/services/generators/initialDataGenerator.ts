@@ -7,8 +7,8 @@ import { generateInitialVideoFeeds } from './videoFeedGenerator';
 
 // Generate initial data state focused on Mistissini
 export const generateInitialData = (): MapDataType => {
-  // Generate initial danger zones
-  const initialDangerZones = generateInitialForestFireZones(3);
+  // Generate initial danger zones - just one in the center
+  const initialDangerZones = generateInitialForestFireZones();
   
   // Generate initial responders based on danger zones
   const initialResponders = generateInitialResponders(initialDangerZones);
@@ -25,7 +25,7 @@ export const generateInitialData = (): MapDataType => {
       id: 'route-1',
       type: 'street' as const,
       status: 'open' as const,
-      startPoint: 'Mistissini Center',
+      startPoint: 'Lake Shore',
       endPoint: 'Eastern Mistissini',
       estimatedTime: 5,
       transportMethods: ['car', 'emergency'] as Array<'car' | 'foot' | 'emergency'>,
