@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Polyline, Popup } from "react-leaflet";
 import { EvacuationRouteType } from "@/types/emergency";
 
@@ -19,12 +19,11 @@ interface EvacuationRoutesProps {
   standalone?: boolean;
 }
 
-// GraphHopper API key
 const API_KEY = "5adb1e1c-29a2-4293-81c1-1c81779679bb";
 
-// Helper function to extract lat/lng from string coordinates
-const extractCoordinates = (locationString: string): { lat: number; lng: number } | null => {
-  // If the location already has coordinates in it like "Mistissini (51.0285, -73.8712)"
+// Enhanced coordinate extraction with better error handling
+const extractCoordinates = (locationString: string): { lat: number; lng: number } => {
+  // First try to extract coordinates directly from string
   const coordMatch = locationString.match(/\((-?\d+\.\d+),\s*(-?\d+\.\d+)\)/);
   if (coordMatch) {
     return {
@@ -32,8 +31,8 @@ const extractCoordinates = (locationString: string): { lat: number; lng: number 
       lng: parseFloat(coordMatch[2])
     };
   }
-  
-  // For testing, use predefined coordinates for certain locations
+
+  // Enhanced location mapping with more precise coordinates
   const locationMap: Record<string, { lat: number; lng: number }> = {
     'Mistissini': { lat: 50.4221, lng: -73.8683 },
     'Chibougamau': { lat: 49.9166, lng: -74.3694 },
@@ -50,9 +49,10 @@ const extractCoordinates = (locationString: string): { lat: number; lng: number 
     'Spruce Street': { lat: 50.4200, lng: -73.8570 }
   };
 
-  // Check if the location name is in our map
+  // Case-insensitive matching
+  const normalizedInput = locationString.toLowerCase();
   for (const [key, coords] of Object.entries(locationMap)) {
-    if (locationString.includes(key)) {
+    if (normalizedInput.includes(key.toLowerCase())) {
       return coords;
     }
   }
@@ -61,34 +61,37 @@ const extractCoordinates = (locationString: string): { lat: number; lng: number 
   return { lat: 50.4221, lng: -73.8683 };
 };
 
-// Global route cache to persist between renders
-const routeCache: Record<string, [number, number][]> = {};
+// Enhanced route cache with expiration
+const routeCache: Record<string, { path: [number, number][]; timestamp: number }> = {};
+const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-// Function to generate a cache key for routes
 const getCacheKey = (start: { lat: number; lng: number }, end: { lat: number; lng: number }): string => {
-  return `${start.lat.toFixed(4)},${start.lng.toFixed(4)}_${end.lat.toFixed(4)},${end.lng.toFixed(4)}`;
+  return `${start.lat.toFixed(6)},${start.lng.toFixed(6)}_${end.lat.toFixed(6)},${end.lng.toFixed(6)}`;
 };
 
-// Function to fetch route from GraphHopper API with caching
-const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: number; lng: number }) => {
-  // Generate cache key for this route
+// Improved route fetching with better error handling and retry logic
+const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: number; lng: number }, retries = 3): Promise<[number, number][] | null> => {
   const cacheKey = getCacheKey(start, end);
   
-  // Return cached result if available
-  if (routeCache[cacheKey]) {
-    return routeCache[cacheKey];
+  // Check cache (with expiration)
+  if (routeCache[cacheKey] && Date.now() - routeCache[cacheKey].timestamp < CACHE_EXPIRATION_MS) {
+    return routeCache[cacheKey].path;
   }
-  
-  // For very small distances, create a smoother direct line with intermediate points
-  const distance = Math.sqrt(
-    Math.pow((start.lat - end.lat) * 111, 2) + 
-    Math.pow((start.lng - end.lng) * 111 * Math.cos(start.lat * Math.PI / 180), 2)
-  );
-  
-  if (distance < 0.3) { // Less than 300m
-    // Create a smoother path with more points for short distances
+
+  // Calculate distance in kilometers
+  const R = 6371; // Earth's radius in km
+  const dLat = (end.lat - start.lat) * Math.PI / 180;
+  const dLng = (end.lng - start.lng) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(start.lat * Math.PI / 180) * Math.cos(end.lat * Math.PI / 180) * 
+    Math.sin(dLng/2) * Math.sin(dLng/2);
+  const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  // For very short distances (<300m), create a smoothed direct line
+  if (distance < 0.3) {
+    const steps = Math.max(5, Math.ceil(distance * 30));
     const directRoute: [number, number][] = [];
-    const steps = Math.max(8, Math.ceil(distance * 30)); // At least 8 points, more for longer distances
     
     for (let i = 0; i <= steps; i++) {
       const ratio = i / steps;
@@ -98,36 +101,39 @@ const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: numbe
       ]);
     }
     
-    routeCache[cacheKey] = directRoute;
+    routeCache[cacheKey] = { path: directRoute, timestamp: Date.now() };
     return directRoute;
   }
-  
+
   try {
     const url = `https://graphhopper.com/api/1/route?point=${start.lat},${start.lng}&point=${end.lat},${end.lng}&vehicle=car&locale=en&key=${API_KEY}&points_encoded=false`;
     
-    console.log(`Fetching route from GraphHopper: ${start.lat},${start.lng} to ${end.lat},${end.lng}`);
     const response = await fetch(url);
     
     if (!response.ok) {
-      console.warn(`GraphHopper API error: ${response.status}`);
+      if (response.status === 429 && retries > 0) {
+        // Rate limited - wait and retry
+        await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)));
+        return fetchRoute(start, end, retries - 1);
+      }
       throw new Error(`API request failed with status ${response.status}`);
     }
     
     const data = await response.json();
     
-    if (data.paths && data.paths.length > 0) {
-      // Convert from [lng, lat] to [lat, lng] format
+    if (data.paths?.[0]?.points?.coordinates) {
       const route = data.paths[0].points.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
-      // Cache the result
-      routeCache[cacheKey] = route;
-      console.log(`Successfully fetched route with ${route.length} points`);
+      routeCache[cacheKey] = { path: route, timestamp: Date.now() };
       return route;
     }
     
-    console.error("No path found in GraphHopper response");
     return null;
   } catch (error) {
-    console.error("Error fetching route from GraphHopper:", error);
+    console.error("Error fetching route:", error);
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return fetchRoute(start, end, retries - 1);
+    }
     return null;
   }
 };
@@ -136,74 +142,48 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
   const [computedRoutes, setComputedRoutes] = useState<RouteCoordinates[]>([]);
   
   useEffect(() => {
-    // Only process routes if we're not in standalone mode
     if (!standalone) {
-      console.log("Processing evacuation routes:", routes.length);
+      // Create initial routes from provided geometry
+      const baseRoutes = routes.map(route => ({
+        id: route.id,
+        path: route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]),
+        status: route.status,
+        routeName: route.routeName || '',
+        startPoint: route.startPoint,
+        endPoint: route.endPoint,
+        estimatedTime: route.estimatedTime,
+        transportMethods: route.transportMethods
+      }));
       
-      // First, create routes using existing geometry (this ensures we always have something to display)
-      const baseRoutes = routes.map(route => {
-        // Convert from [lng, lat] to [lat, lng] format for react-leaflet
-        const path = route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]);
-        
-        return { 
-          id: route.id, 
-          path, 
-          status: route.status,
-          routeName: route.routeName || '',
-          startPoint: route.startPoint,
-          endPoint: route.endPoint,
-          estimatedTime: route.estimatedTime,
-          transportMethods: route.transportMethods
-        } as RouteCoordinates;
-      });
-      
-      // Update state immediately with the base routes
       setComputedRoutes(baseRoutes);
-      
-      // Then process each route sequentially to avoid rate limiting
-      const processRoutesSequentially = async () => {
-        for (let i = 0; i < routes.length; i++) {
-          const route = routes[i];
+
+      // Process routes sequentially with enhanced data
+      const processRoutes = async () => {
+        for (const route of routes) {
           try {
-            // Extract start and end coordinates from the route
             const startCoords = extractCoordinates(route.startPoint);
             const endCoords = extractCoordinates(route.endPoint);
             
-            if (!startCoords || !endCoords) {
-              console.warn(`Could not extract coordinates for route ${route.id}: ${route.startPoint} to ${route.endPoint}`);
-              continue;
-            }
-            
-            console.log(`Processing route ${route.id}: ${route.startPoint} (${startCoords.lat}, ${startCoords.lng}) to ${route.endPoint} (${endCoords.lat}, ${endCoords.lng})`);
-            
-            // Try to fetch enhanced route data
             const path = await fetchRoute(startCoords, endCoords);
             
             if (path) {
-              // Update this specific route with enhanced path data
-              setComputedRoutes(prevRoutes => 
-                prevRoutes.map(r => r.id === route.id ? { ...r, path } : r)
+              setComputedRoutes(prev => 
+                prev.map(r => r.id === route.id ? { ...r, path } : r)
               );
-              console.log(`Updated route ${route.id} with ${path.length} points`);
             }
             
-            // Add a longer delay between requests to avoid API rate limiting
-            if (i < routes.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
+            // Rate limiting protection
+            await new Promise(resolve => setTimeout(resolve, 500));
           } catch (err) {
-            // Just log the error and continue with the next route
             console.error(`Error processing route ${route.id}:`, err);
           }
         }
       };
       
-      // Start processing routes
-      processRoutesSequentially();
+      processRoutes();
     }
   }, [routes, standalone]);
 
-  // If standalone is true, this is being rendered outside a map context, so just render info
   if (standalone) {
     return (
       <div className="p-4 rounded-lg border border-border">
@@ -236,7 +216,6 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
     );
   }
 
-  // Otherwise, render the actual map polylines (will only work inside a MapContainer)
   return (
     <>
       {computedRoutes.map((route) => (
@@ -244,19 +223,44 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
           key={`evac-route-${route.id}`}
           positions={route.path}
           pathOptions={{
-            color: route.status === "open" ? "#22c55e" : route.status === "congested" ? "#f97316" : "#ef4444",
+            color: route.status === "open" ? "#22c55e" : 
+                   route.status === "congested" ? "#f97316" : "#ef4444",
             weight: 5,
             opacity: 0.9,
             lineCap: "round",
-            lineJoin: "round"
+            lineJoin: "round",
+            dashArray: route.status === "closed" ? "10, 10" : undefined
           }}
         >
-          <Popup>
-            <div className="text-sm font-medium">{route.routeName}</div>
-            <div className="text-xs">From: {route.startPoint} to {route.endPoint}</div>
-            <div className="text-xs">Status: {route.status}</div>
-            <div className="text-xs">Estimated Time: {route.estimatedTime} min</div>
-            <div className="text-xs">Transport: {route.transportMethods.join(', ')}</div>
+          <Popup className="min-w-[200px]">
+            <div className="space-y-1">
+              <h4 className="font-bold">{route.routeName || `Route ${route.id}`}</h4>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">From:</span>
+                <span>{route.startPoint}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">To:</span>
+                <span>{route.endPoint}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Status:</span>
+                <span className={`font-medium ${
+                  route.status === "open" ? "text-green-600" :
+                  route.status === "congested" ? "text-yellow-600" : "text-red-600"
+                }`}>
+                  {route.status}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Time:</span>
+                <span>{route.estimatedTime} min</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Transport:</span>
+                <span>{route.transportMethods.join(', ')}</span>
+              </div>
+            </div>
           </Popup>
         </Polyline>
       ))}
