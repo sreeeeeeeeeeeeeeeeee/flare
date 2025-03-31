@@ -20,9 +20,9 @@ export const generateInitialData = (): MapDataType => {
   // Generate initial video feeds
   const initialVideoFeeds = generateInitialVideoFeeds();
   
-  // IMPROVED: Combine street and highway evacuation routes with stable paths
+  // IMPROVED: Generate evacuation routes based on danger zones to ensure proximity
   const allEvacuationRoutes = [
-    ...generateStreetEvacuationRoutes(),
+    ...generateStreetEvacuationRoutes(initialDangerZones),
     ...generateHighwayEvacuationRoutes()
   ];
   

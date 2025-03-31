@@ -1,18 +1,20 @@
+
 import { EvacuationRouteType } from '@/types/emergency';
 import { mistissiniStreets, mistissiniHighways } from '../mistissini';
+import { DangerZoneType } from '@/types/emergency';
 
 // IMPROVED: Generate evacuation routes that follow actual Mistissini streets
-export const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
+export const generateStreetEvacuationRoutes = (dangerZones: DangerZoneType[] = []): EvacuationRouteType[] => {
   const routes: EvacuationRouteType[] = [];
   
-  // Use specific streets for evacuation
-  const streetsToUse = [
+  // Base evacuation routes - always present
+  const baseStreets = [
     "Main Street",
     "Lakeshore Drive"
   ];
   
-  // Create evacuation routes for each selected street with precise start/end points
-  streetsToUse.forEach((streetName, index) => {
+  // Create evacuation routes for each base street
+  baseStreets.forEach((streetName, index) => {
     const street = mistissiniStreets.find(s => s.name === streetName);
     
     if (street) {
@@ -30,22 +32,50 @@ export const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
         endPoint = `${street.name} End`;
       }
       
-      // Use the street's path with proper GeoJSON formatting
-      // Convert path coordinates to the format expected by GeoJSON (lng, lat)
+      // Convert path coordinates to GeoJSON format (lng, lat)
       const coordinates = street.path.map(point => [point[1], point[0]]);
-      
-      // Make all routes consistently "open" in the initial state
-      // for simplicity and to match map display
-      const status: 'open' | 'congested' | 'closed' = 'open';
       
       routes.push({
         id: `route-street-${index + 1}`,
         startPoint,
         endPoint,
-        status,
+        status: 'open',
         estimatedTime: 5 + Math.floor(Math.random() * 10), // 5-15 minutes
         transportMethods: ['car', 'emergency', 'foot'],
         routeName: street.name,
+        geometry: {
+          type: 'LineString',
+          coordinates
+        }
+      });
+    }
+  });
+  
+  // For each danger zone, ensure there's a nearby evacuation route
+  dangerZones.forEach((zone, zoneIndex) => {
+    // Find a street close to this danger zone (that's not already used)
+    const usedStreetNames = routes.map(r => r.routeName);
+    const availableStreets = mistissiniStreets.filter(s => !usedStreetNames.includes(s.name));
+    
+    if (availableStreets.length > 0) {
+      // Choose a street (could implement actual proximity calculation for production)
+      const street = availableStreets[zoneIndex % availableStreets.length];
+      
+      // Use danger zone as start point and a safe area as end point
+      const startPoint = `Danger Zone ${zoneIndex + 1}`;
+      const endPoint = "Community Center"; // Safe evacuation point
+      
+      // Convert path coordinates to GeoJSON format (lng, lat)
+      const coordinates = street.path.map(point => [point[1], point[0]]);
+      
+      routes.push({
+        id: `route-evacuation-${zoneIndex + 1}`,
+        startPoint,
+        endPoint,
+        status: 'open', // Start as open, will be updated dynamically
+        estimatedTime: 8 + Math.floor(Math.random() * 7), // 8-15 minutes
+        transportMethods: ['car', 'emergency', 'foot'],
+        routeName: `${street.name} Evacuation Route`,
         geometry: {
           type: 'LineString',
           coordinates
