@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Polyline, Popup } from "react-leaflet";
 import { EvacuationRouteType } from "@/types/emergency";
@@ -26,36 +27,42 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
     if (!standalone) {
       console.log("Processing evacuation routes:", routes.length);
       
-      // Instead of making API calls, use the geometry data that already exists in the routes
-      const newRoutes = routes.map((route) => {
-        try {
-          // Convert the GeoJSON coordinates format [lng, lat] to Leaflet format [lat, lng]
-          const path = route.geometry.coordinates.map(
-            ([lng, lat]) => [lat, lng] as [number, number]
-          );
-          
-          return { 
-            id: route.id, 
-            path, 
-            status: route.status,
-            routeName: route.routeName || '',
-            startPoint: route.startPoint,
-            endPoint: route.endPoint,
-            estimatedTime: route.estimatedTime,
-            transportMethods: route.transportMethods
-          } as RouteCoordinates;
-        } catch (err) {
-          console.error("Error processing route:", err);
-          return null;
-        }
-      }).filter((r): r is RouteCoordinates => r !== null);
+      // Process the routes synchronously without API calls
+      const processRoutes = () => {
+        const newRoutes = routes.map((route) => {
+          try {
+            // Convert the GeoJSON coordinates format [lng, lat] to Leaflet format [lat, lng]
+            const path = route.geometry.coordinates.map(
+              ([lng, lat]) => [lat, lng] as [number, number]
+            );
+            
+            return { 
+              id: route.id, 
+              path, 
+              status: route.status,
+              routeName: route.routeName || '',
+              startPoint: route.startPoint,
+              endPoint: route.endPoint,
+              estimatedTime: route.estimatedTime,
+              transportMethods: route.transportMethods
+            } as RouteCoordinates;
+          } catch (err) {
+            console.error("Error processing route:", err);
+            return null;
+          }
+        }).filter((r): r is RouteCoordinates => r !== null);
+        
+        console.log("Valid routes processed:", newRoutes.length);
+        setComputedRoutes(newRoutes);
+      };
       
-      console.log("Valid routes processed:", newRoutes.length);
-      setComputedRoutes(newRoutes);
+      // Process routes immediately
+      processRoutes();
     }
   }, [routes, standalone]);
 
-  console.log("Rendering evacuation routes:", computedRoutes.length, "standalone:", standalone);
+  // Ensure consistent unique keys for route rendering
+  const getUniqueKey = (routeId: string) => `evac-route-${routeId}-${Date.now()}`;
 
   // If standalone is true, this is being rendered outside a map context, so just render info
   if (standalone) {
@@ -64,7 +71,7 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
         <h3 className="text-lg font-medium mb-2">Evacuation Routes</h3>
         <div className="space-y-2">
           {routes.map((route) => (
-            <div key={route.id} className="p-2 bg-card rounded flex justify-between items-center">
+            <div key={`standalone-${route.id}`} className="p-2 bg-card rounded flex justify-between items-center">
               <div>
                 <div className="font-medium">{route.routeName || `Route ${route.id}`}</div>
                 <div className="text-xs text-muted-foreground">
@@ -95,7 +102,7 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
     <>
       {computedRoutes.map((route) => (
         <Polyline
-          key={`evac-route-${route.id}`}
+          key={getUniqueKey(route.id)}
           positions={route.path}
           pathOptions={{
             color: route.status === "open" ? "#22c55e" : route.status === "congested" ? "#f97316" : "#ef4444",
