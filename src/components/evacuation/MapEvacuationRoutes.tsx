@@ -11,9 +11,7 @@ interface MapEvacuationRoutesProps {
 
 const MapEvacuationRoutes: React.FC<MapEvacuationRoutesProps> = ({ routes, isLoading }) => {
   if (isLoading) {
-    return (
-      <div className="loading">Calculating safest evacuation routes...</div>
-    );
+    return null; // Don't show loading indicator on map to avoid overlaps
   }
 
   return (

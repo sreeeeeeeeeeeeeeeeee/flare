@@ -36,7 +36,7 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
   if (standalone) {
     return <StandaloneEvacuationRoutes 
       routes={routesToDisplay} 
-      isLoading={isLoading} 
+      isLoading={isLoading && routesToDisplay.length === 0} 
     />;
   }
 
@@ -46,7 +46,10 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
     return null;
   }
 
-  return <MapEvacuationRoutes routes={routesToDisplay} isLoading={isLoading} />;
+  return <MapEvacuationRoutes 
+    routes={routesToDisplay} 
+    isLoading={isLoading && routesToDisplay.length === 0} 
+  />;
 };
 
 export default EvacuationRoutes;

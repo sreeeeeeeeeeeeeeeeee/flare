@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Route } from '@/types/mapTypes';
 import { EvacuationRouteType } from '@/types/emergency';
@@ -9,7 +10,7 @@ import {
 
 export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
   const [computedRoutes, setComputedRoutes] = useState<Route[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const isMountedRef = useRef(true);
   const isProcessingRef = useRef(false);
   const routesRef = useRef(routes);
@@ -28,6 +29,8 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
     
     if (isMountedRef.current) {
       setComputedRoutes(baseRoutes);
+      // Set loading to false since we have base routes ready
+      setIsLoading(false);
     }
   }, [routes]);
 
@@ -35,6 +38,8 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
     if (isProcessingRef.current) return;
     
     isProcessingRef.current = true;
+    setIsLoading(true);
+    
     try {
       const currentRoutes = computedRoutes.length > 0 ? computedRoutes : routesRef.current.map(route => ({
         id: route.id,

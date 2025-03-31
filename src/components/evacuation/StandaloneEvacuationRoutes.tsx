@@ -3,6 +3,7 @@ import React from 'react';
 import { Route } from '@/types/mapTypes';
 import { Badge } from '@/components/ui/badge';
 import { calculateDistance } from '@/utils/mapUtils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface StandaloneEvacuationRoutesProps {
   routes: Route[];
@@ -13,7 +14,7 @@ const StandaloneEvacuationRoutes: React.FC<StandaloneEvacuationRoutesProps> = ({
   routes, 
   isLoading 
 }) => {
-  // Get status badge style
+  // Get status badge variant
   const getStatusBadgeVariant = (status: 'open' | 'congested' | 'closed') => {
     switch (status) {
       case 'open':
@@ -31,7 +32,15 @@ const StandaloneEvacuationRoutes: React.FC<StandaloneEvacuationRoutesProps> = ({
     <div className="p-4 rounded-lg border border-border">
       <h3 className="text-lg font-medium mb-2">Evacuation Routes</h3>
       {isLoading ? (
-        <div className="loading">Calculating evacuation routes...</div>
+        <div className="space-y-2">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      ) : routes.length === 0 ? (
+        <div className="text-muted-foreground text-center py-4">
+          No active evacuation routes
+        </div>
       ) : (
         <div className="space-y-2">
           {routes.map((route) => (
