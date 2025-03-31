@@ -21,18 +21,26 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
     }
   }, [standalone, isInMapContainer, calculateRoutes, isLoading]);
 
-  // Standalone view for routes (outside map)
+  // For standalone view outside map, convert evacuation routes to standard route format
   if (standalone) {
-    return <StandaloneEvacuationRoutes routes={routes} isLoading={isLoading} />;
+    const standaloneRoutes = routes.map(route => ({
+      id: route.id,
+      path: route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]),
+      status: route.status,
+      start: route.startPoint,
+      end: route.endPoint,
+      updatedAt: new Date()
+    }));
+    
+    return <StandaloneEvacuationRoutes routes={standaloneRoutes} isLoading={false} />;
   }
 
-  // Only render map elements if we're actually inside a MapContainer
+  // Map view for routes
   if (!isInMapContainer) {
     console.log("EvacuationRoutes: Not rendering map elements because we're not in a MapContainer");
     return null;
   }
 
-  // Map view for routes
   return <MapEvacuationRoutes routes={computedRoutes} isLoading={isLoading} />;
 };
 

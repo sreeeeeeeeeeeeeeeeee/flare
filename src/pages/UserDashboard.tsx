@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Link } from 'react-router-dom';
 import EmergencyMap from '@/components/EmergencyMap';
 import VideoFeed from '@/components/VideoFeed';
-import EvacuationRoutesCard from '@/components/map/EvacuationRoutesCard';
+import EvacuationRoutes from '@/components/EvacuationRoutes';
 import PublicAlerts from '@/components/PublicAlerts';
 import StatusPanel from '@/components/StatusPanel';
 import { AlertCircle, ArrowLeft } from 'lucide-react';
@@ -16,7 +15,6 @@ const UserDashboard = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [mapData, setMapData] = useState(mockDataService.getInitialData());
-  const [routes, setRoutes] = useState<Route[]>([]);
   
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -29,21 +27,6 @@ const UserDashboard = () => {
     
     return () => clearTimeout(timer);
   }, [toast]);
-  
-  // Convert evacuation routes to the format expected by our Route type
-  useEffect(() => {
-    if (mapData.evacuationRoutes) {
-      const convertedRoutes = mapData.evacuationRoutes.map(route => ({
-        id: route.id,
-        path: route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]),
-        status: route.status as 'open' | 'congested' | 'closed', // Fixed TypeScript error here
-        start: route.startPoint,
-        end: route.endPoint,
-        updatedAt: new Date()
-      }));
-      setRoutes(convertedRoutes);
-    }
-  }, [mapData.evacuationRoutes]);
   
   useEffect(() => {
     const updateInterval = setInterval(() => {
@@ -105,7 +88,7 @@ const UserDashboard = () => {
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <VideoFeed currentFeed={mapData.videoFeeds[0]} />
-              <EvacuationRoutesCard routes={routes} isLoading={isLoading} />
+              <EvacuationRoutes routes={mapData.evacuationRoutes} standalone={true} />
             </div>
           </div>
           

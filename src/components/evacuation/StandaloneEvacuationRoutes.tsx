@@ -1,10 +1,11 @@
 
 import React from 'react';
-import { EvacuationRouteType } from '@/types/emergency';
+import { Route } from '@/types/mapTypes';
 import { Badge } from '@/components/ui/badge';
+import { calculateDistance } from '@/utils/mapUtils';
 
 interface StandaloneEvacuationRoutesProps {
-  routes: EvacuationRouteType[];
+  routes: Route[];
   isLoading: boolean;
 }
 
@@ -36,12 +37,12 @@ const StandaloneEvacuationRoutes: React.FC<StandaloneEvacuationRoutesProps> = ({
           {routes.map((route) => (
             <div key={`standalone-${route.id}`} className="p-2 bg-card rounded flex justify-between items-center">
               <div>
-                <div className="font-medium">{route.routeName || `Route ${route.id}`}</div>
+                <div className="font-medium">{route.start} → {route.end}</div>
                 <div className="text-xs text-muted-foreground">
-                  {route.startPoint} → {route.endPoint}
+                  Distance: {calculateDistance(route.path).toFixed(1)} km
                 </div>
                 <div className="text-xs">
-                  Estimated time: {route.estimatedTime} min
+                  Updated: {route.updatedAt.toLocaleTimeString()}
                 </div>
               </div>
               <Badge variant={getStatusBadgeVariant(route.status)}>
