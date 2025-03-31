@@ -2,6 +2,8 @@
 import { MapDataType } from '@/types/emergency';
 import { generateInitialData } from './generators/initialDataGenerator';
 import { generateUpdatedData } from './generators/updatedDataGenerator';
+import { mistissiniStreets } from './mistissini/streets';
+import { mistissiniHighways } from './mistissini/highways';
 
 // Create and cache initial data instance with fixed evacuation routes
 const initialData = generateInitialData();
@@ -18,7 +20,9 @@ const fixedEvacuationRoutes = [
     transportMethods: ['car', 'emergency'] as Array<'car' | 'foot' | 'emergency'>,
     geometry: {
       type: 'LineString' as const,
-      coordinates: [
+      coordinates: mistissiniStreets.find(street => street.name === "Main Street")?.path.map(
+        ([lat, lng]) => [lng, lat] // Convert from [lat, lng] to GeoJSON [lng, lat]
+      ) || [
         [-73.8760, 50.4215],
         [-73.8730, 50.4220],
         [-73.8700, 50.4225],
@@ -38,7 +42,9 @@ const fixedEvacuationRoutes = [
     transportMethods: ['car', 'foot', 'emergency'] as Array<'car' | 'foot' | 'emergency'>,
     geometry: {
       type: 'LineString' as const,
-      coordinates: [
+      coordinates: mistissiniStreets.find(street => street.name === "Saint John Street")?.path.map(
+        ([lat, lng]) => [lng, lat] // Convert from [lat, lng] to GeoJSON [lng, lat]
+      ) || [
         [-73.8685, 50.4260],
         [-73.8685, 50.4245],
         [-73.8685, 50.4230],
@@ -58,7 +64,9 @@ const fixedEvacuationRoutes = [
     transportMethods: ['car', 'emergency'] as Array<'car' | 'foot' | 'emergency'>,
     geometry: {
       type: 'LineString' as const,
-      coordinates: [
+      coordinates: mistissiniHighways.find(highway => highway.name === "Route 167 to Chibougamau")?.path.slice(0, 15).map(
+        ([lat, lng]) => [lng, lat] // Convert from [lat, lng] to GeoJSON [lng, lat]
+      ) || [
         [-73.8640, 50.4230],
         [-73.8620, 50.4300],
         [-73.8560, 50.4380],

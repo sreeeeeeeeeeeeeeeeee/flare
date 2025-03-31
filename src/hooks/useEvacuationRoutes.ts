@@ -4,9 +4,9 @@ import { Route } from '@/types/mapTypes';
 import { EvacuationRouteType } from '@/types/emergency';
 import { 
   getLocationCoordinates, 
-  fetchSafeRoute, 
   calculateDistance 
 } from '@/utils/routeCalculationUtils';
+import { mistissiniStreets, mistissiniHighways } from '@/services/mistissini';
 
 export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
   const [computedRoutes, setComputedRoutes] = useState<Route[]>([]);
@@ -14,6 +14,25 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
   const isMountedRef = useRef(true);
   const isProcessingRef = useRef(false);
   const routesRef = useRef(routes);
+  
+  // Map route IDs to specific road paths
+  const getPathForRoute = (routeId: string): [number, number][] => {
+    switch (routeId) {
+      case 'route-1':
+        return mistissiniStreets.find(street => street.name === "Main Street")?.path as [number, number][];
+      case 'route-2':
+        return mistissiniStreets.find(street => street.name === "Saint John Street")?.path as [number, number][];
+      case 'route-3':
+        return mistissiniHighways.find(highway => highway.name === "Route 167 to Chibougamau")?.path.slice(0, 15) as [number, number][];
+      default:
+        // Use provided coordinates if no matching predefined path
+        const currentRoute = routesRef.current.find(r => r.id === routeId);
+        if (currentRoute) {
+          return currentRoute.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]);
+        }
+        return [] as [number, number][];
+    }
+  };
   
   // Move this useCallback before the useEffect that depends on it
   const calculateRoutes = useCallback(async () => {
@@ -36,10 +55,8 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
       
       for (const route of routesRef.current) {
         try {
-          const startCoords = getLocationCoordinates(route.startPoint);
-          const endCoords = getLocationCoordinates(route.endPoint);
-
-          const path = await fetchSafeRoute(startCoords, endCoords);
+          // Use predefined roads instead of calculating new paths
+          const path = getPathForRoute(route.id);
           
           const enhancedRoute: Route = {
             id: route.id,
@@ -51,8 +68,6 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
           };
           
           enhancedRoutes.push(enhancedRoute);
-          
-          await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
           console.error(`Error calculating route ${route.id}:`, error);
           
@@ -80,14 +95,19 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
   useEffect(() => {
     routesRef.current = routes;
     
-    const baseRoutes: Route[] = routes.map(route => ({
-      id: route.id,
-      path: route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]),
-      status: route.status,
-      start: route.startPoint,
-      end: route.endPoint,
-      updatedAt: new Date()
-    }));
+    const baseRoutes: Route[] = routes.map(route => {
+      // Map each route to a predefined road path
+      const path = getPathForRoute(route.id);
+      
+      return {
+        id: route.id,
+        path: path,
+        status: route.status,
+        start: route.startPoint,
+        end: route.endPoint,
+        updatedAt: new Date()
+      };
+    });
     
     if (isMountedRef.current) {
       setComputedRoutes(baseRoutes);
