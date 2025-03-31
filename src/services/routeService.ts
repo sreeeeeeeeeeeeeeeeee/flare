@@ -3,95 +3,78 @@
  * Route calculation service
  */
 
-import { GRAPHHOPPER_API_KEY, ROAD_SEGMENTS, haversineDistance } from '@/utils/mapUtils';
 import { Route } from '@/types/mapTypes';
+import { mistissiniStreets } from './mistissini/streets';
+import { mistissiniHighways } from './mistissini/highways';
 
-/**
- * Snaps a point to the nearest road segment
- */
-export const snapToRoad = (point: [number, number]): [number, number] => {
-  let closestPoint: [number, number] = point;
-  let minDistance = Infinity;
+// Get a predefined street route based on names
+const getStreetRoute = (start: string, end: string): [number, number][] => {
+  // Find a matching street or create a path
+  const streetRoutes = mistissiniStreets.map(street => street.path);
+  
+  // Return a street path or fallback
+  return streetRoutes[0] || [
+    [50.4220, -73.8700], // Default start
+    [50.4230, -73.8670]  // Default end
+  ];
+};
 
-  ROAD_SEGMENTS.forEach(segment => {
-    segment.forEach(roadPoint => {
-      const dist = haversineDistance(
-        point[0], point[1],
-        roadPoint[0], roadPoint[1]
-      );
-      if (dist < minDistance && dist < 0.1) { // 100m threshold
-        minDistance = dist;
-        closestPoint = roadPoint;
-      }
-    });
-  });
-
-  return closestPoint;
+// Get a predefined highway route
+const getHighwayRoute = (): [number, number][] => {
+  return mistissiniHighways[0]?.path || [
+    [50.4230, -73.8640], // Default start
+    [50.4300, -73.8620]  // Default end
+  ];
 };
 
 /**
- * Fetches a road route between two points
- */
-export const fetchRoadRoute = async (start: [number, number], end: [number, number]): Promise<[number, number][]> => {
-  try {
-    // 1. First try to snap points to nearest known roads
-    const snappedStart = snapToRoad(start);
-    const snappedEnd = snapToRoad(end);
-
-    // 2. Fetch route from GraphHopper with elevation data for precision
-    const response = await fetch(
-      `https://graphhopper.com/api/1/route?` +
-      `point=${snappedStart[0]},${snappedStart[1]}&` +
-      `point=${snappedEnd[0]},${snappedEnd[1]}&` +
-      `vehicle=car&key=${GRAPHHOPPER_API_KEY}&` +
-      `points_encoded=false&` +
-      `elevation=true&` + // Better terrain following
-      `locale=en&` +
-      `ch.disable=true&` + // More precise routing
-      `turn_costs=true`    // Better road following
-    );
-
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
-
-    const data = await response.json();
-    
-    if (data.paths?.[0]?.points?.coordinates) {
-      return data.paths[0].points.coordinates.map(
-        ([lng, lat]: [number, number]) => [lat, lng] as [number, number]
-      );
-    }
-    
-    return [start, end]; // Fallback
-  } catch (error) {
-    console.error('Routing error:', error);
-    return [start, end]; // Fallback
-  }
-};
-
-/**
- * Initializes routes based on route definitions
+ * Initializes routes with fixed paths
  */
 export const initializeRoutes = async (
-  routeDefinitions: Array<{ id: string; start: string; end: string }>,
+  routeDefinitions: Array<{ id: string; start: string; end: string, status: 'open' | 'congested' | 'closed' }>,
   locationMap: Record<string, [number, number]>
 ): Promise<Route[]> => {
-  const calculatedRoutes: Route[] = [];
-
-  for (const def of routeDefinitions) {
-    const startPos = locationMap[def.start];
-    const endPos = locationMap[def.end];
-
-    if (!startPos || !endPos) continue;
-
-    const path = await fetchRoadRoute(startPos, endPos);
-    
-    calculatedRoutes.push({
-      ...def,
-      path,
+  console.log("Initializing routes with definitions:", routeDefinitions);
+  
+  // Create three predefined routes with different paths and statuses
+  const calculatedRoutes: Route[] = [
+    {
+      id: 'route-1',
+      path: [
+        [50.4220, -73.8700],
+        [50.4230, -73.8670],
+        [50.4235, -73.8640],
+        [50.4240, -73.8610]
+      ],
       status: 'open',
+      start: 'Mistissini Center',
+      end: 'Eastern Mistissini',
       updatedAt: new Date()
-    });
-  }
+    },
+    {
+      id: 'route-2',
+      path: [
+        [50.4260, -73.8685],
+        [50.4245, -73.8685],
+        [50.4230, -73.8685],
+        [50.4215, -73.8685],
+        [50.4200, -73.8685]
+      ],
+      status: 'congested',
+      start: 'Northern Mistissini',
+      end: 'Southern Mistissini',
+      updatedAt: new Date()
+    },
+    {
+      id: 'route-3',
+      path: mistissiniHighways[0].path.slice(0, 10),
+      status: 'closed',
+      start: 'Mistissini',
+      end: 'Chibougamau Highway',
+      updatedAt: new Date()
+    }
+  ];
 
+  console.log("Generated routes:", calculatedRoutes);
   return calculatedRoutes;
 };
