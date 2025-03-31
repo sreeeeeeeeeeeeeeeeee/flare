@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -58,13 +59,16 @@ function EvacuationRoutes({ routes }: { routes: any[] }) {
 
   const fetchRoute = async (startLat: number, startLng: number, endLat: number, endLng: number) => {
     try {
+      console.log(`Fetching route from [${startLat},${startLng}] to [${endLat},${endLng}]`);
       const url = `https://graphhopper.com/api/1/route?point=${startLat},${startLng}&point=${endLat},${endLng}&vehicle=car&locale=en&key=${GRAPH_HOPPER_API_KEY}&points_encoded=false`;
       
       const response = await fetch(url);
       const data = await response.json();
       
       if (data.paths && data.paths[0] && data.paths[0].points && data.paths[0].points.coordinates) {
-        return data.paths[0].points.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
+        const convertedPath = data.paths[0].points.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
+        console.log("Successfully fetched path:", convertedPath.length, "points");
+        return convertedPath;
       } else {
         console.error("Invalid response structure from GraphHopper API:", data);
         // Return a direct line between start and end as fallback
@@ -78,13 +82,15 @@ function EvacuationRoutes({ routes }: { routes: any[] }) {
   };
 
   useEffect(() => {
-    // For demo purposes, use the actual route data without calculating new routes
-    // This ensures the app continues to work even when API calls fail
+    // Process each route in the data
     const getRoutes = async () => {
+      console.log("Processing evacuation routes:", routes.length);
+      
       // Process each route in the data
       const newRoutes = await Promise.all(
         routes.map(async (route) => {
           try {
+            console.log("Processing route:", route.id, route.routeName);
             // Use predefined streets as fallback when API fails
             let path: [number, number][] = [];
             
@@ -93,15 +99,19 @@ function EvacuationRoutes({ routes }: { routes: any[] }) {
             const highwayRoute = mistissiniHighways.find(highway => highway.name === route.routeName);
             
             if (streetRoute) {
+              console.log("Using street path for:", route.routeName);
               path = streetRoute.path as [number, number][];
             } else if (highwayRoute) {
+              console.log("Using highway path for:", route.routeName);
               path = highwayRoute.path as [number, number][];
             } else {
               // If no matching street, use the geometry directly from the route data
-              if (route.geometry && route.geometry.coordinates) {
+              if (route.geometry && route.geometry.coordinates && route.geometry.coordinates.length > 0) {
+                console.log("Using geometry from route data");
                 path = route.geometry.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
               } else {
                 // As last resort, generate random points near Mistissini
+                console.log("Using GraphHopper API to fetch route");
                 const startLat = mistissiniLocation.center.lat - 0.01 + Math.random() * 0.005;
                 const startLng = mistissiniLocation.center.lng - 0.01 + Math.random() * 0.005;
                 const endLat = mistissiniLocation.center.lat - 0.005 + Math.random() * 0.01;
@@ -110,6 +120,19 @@ function EvacuationRoutes({ routes }: { routes: any[] }) {
                 path = await fetchRoute(startLat, startLng, endLat, endLng) || [[startLat, startLng], [endLat, endLng]];
               }
             }
+            
+            // Ensure path has at least 2 points
+            if (!path || path.length < 2) {
+              console.error("Invalid path for route:", route.id);
+              // Create a fallback direct line
+              const startLat = mistissiniLocation.center.lat - 0.01;
+              const startLng = mistissiniLocation.center.lng - 0.01;
+              const endLat = mistissiniLocation.center.lat + 0.01;
+              const endLng = mistissiniLocation.center.lng + 0.01;
+              path = [[startLat, startLng], [endLat, endLng]];
+            }
+            
+            console.log(`Route ${route.id} processed with ${path.length} points`);
             
             return { 
               id: route.id, 
@@ -129,11 +152,15 @@ function EvacuationRoutes({ routes }: { routes: any[] }) {
       );
       
       // Filter out any failed routes and set in state
-      setComputedRoutes(newRoutes.filter((r): r is RouteCoordinates => r !== null));
+      const validRoutes = newRoutes.filter((r): r is RouteCoordinates => r !== null);
+      console.log("Valid routes processed:", validRoutes.length);
+      setComputedRoutes(validRoutes);
     };
 
     getRoutes();
   }, [routes]);
+
+  console.log("Rendering evacuation routes:", computedRoutes.length);
 
   return (
     <>
