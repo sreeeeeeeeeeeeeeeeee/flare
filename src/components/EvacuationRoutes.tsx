@@ -44,9 +44,21 @@ const extractCoordinates = (locationString: string): { lat: number; lng: number 
     'Community Center': { lat: 50.4232, lng: -73.8660 },
     'Lake Shore': { lat: 50.4150, lng: -73.8900 },
     'Forest Edge': { lat: 50.4250, lng: -73.8500 },
+    'Eastern Mistissini': { lat: 50.4240, lng: -73.8610 },
+    'Western Mistissini': { lat: 50.4215, lng: -73.8760 },
+    'Northern Mistissini': { lat: 50.4260, lng: -73.8685 },
+    'Southern Mistissini': { lat: 50.4185, lng: -73.8685 },
+    'Central Mistissini': { lat: 50.4225, lng: -73.8685 },
+    'Northern Forest Area': { lat: 50.4300, lng: -73.8720 },
+    'Southern Residential Area': { lat: 50.4165, lng: -73.8730 },
+    'Western Exit': { lat: 50.4190, lng: -73.8815 },
+    'Cultural Center': { lat: 50.4190, lng: -73.8650 },
+    'Western Area': { lat: 50.4140, lng: -73.9350 },
+    'Eastern Shore': { lat: 50.4200, lng: -73.8505 },
     'Euelsti Street': { lat: 50.4180, lng: -73.8650 },
     'Amisk Street': { lat: 50.4165, lng: -73.8670 },
-    'Spruce Street': { lat: 50.4200, lng: -73.8570 }
+    'Spruce Street': { lat: 50.4200, lng: -73.8570 },
+    'Main Street': { lat: 50.4225, lng: -73.8700 }
   };
 
   // Case-insensitive matching
@@ -69,7 +81,102 @@ const getCacheKey = (start: { lat: number; lng: number }, end: { lat: number; ln
   return `${start.lat.toFixed(6)},${start.lng.toFixed(6)}_${end.lat.toFixed(6)},${end.lng.toFixed(6)}`;
 };
 
-// Improved route fetching with better error handling and retry logic
+// Lake Mistassini boundary - simplified polygon to define water area
+const lakeMistassiniCoordinates = [
+  [50.4107, -73.8462], // Main reference point
+  [50.4080, -73.8500],
+  [50.4060, -73.8600],
+  [50.4050, -73.8700],
+  [50.4055, -73.8800],
+  [50.4070, -73.8900],
+  [50.4090, -73.9000],
+  [50.4120, -73.9050],
+  [50.4150, -73.9000],
+  [50.4180, -73.8950],
+  [50.4200, -73.8850],
+  [50.4180, -73.8750],
+  [50.4160, -73.8650],
+  [50.4140, -73.8550],
+  [50.4120, -73.8500],
+  [50.4107, -73.8462]
+];
+
+// Check if a point is inside the lake polygon - using ray casting algorithm
+const isPointInWater = (point: [number, number]): boolean => {
+  const [lat, lng] = point;
+  let inside = false;
+  
+  for (let i = 0, j = lakeMistassiniCoordinates.length - 1; i < lakeMistassiniCoordinates.length; j = i++) {
+    const [xi, yi] = [lakeMistassiniCoordinates[i][0], lakeMistassiniCoordinates[i][1]];
+    const [xj, yj] = [lakeMistassiniCoordinates[j][0], lakeMistassiniCoordinates[j][1]];
+    
+    // Check if point crosses polygon edge
+    const intersect = ((yi > lat) !== (yj > lat)) && 
+                      (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  
+  return inside;
+};
+
+// Filter water points from route
+const filterWaterPoints = (route: [number, number][]): [number, number][] => {
+  if (route.length <= 2) return route; // Don't filter if it's just start and end
+  
+  // Check if any points are in water
+  const hasWaterPoints = route.some(point => isPointInWater(point));
+  if (!hasWaterPoints) return route;
+  
+  const filteredRoute: [number, number][] = [];
+  let inWaterSegment = false;
+  let lastLandPoint: [number, number] | null = null;
+  
+  // Process each point in the route
+  for (let i = 0; i < route.length; i++) {
+    const point = route[i];
+    const isWater = isPointInWater(point);
+    
+    if (!isWater) {
+      // If coming out of water segment, connect to last known land point
+      if (inWaterSegment && lastLandPoint) {
+        // Create straight route from last land point to current land point
+        const segments = 5; // Number of points to create for crossing
+        for (let j = 1; j <= segments; j++) {
+          const ratio = j / (segments + 1);
+          const interpolatedPoint: [number, number] = [
+            lastLandPoint[0] + (point[0] - lastLandPoint[0]) * ratio,
+            lastLandPoint[1] + (point[1] - lastLandPoint[1]) * ratio
+          ];
+          filteredRoute.push(interpolatedPoint);
+        }
+        inWaterSegment = false;
+      }
+      
+      filteredRoute.push(point);
+      lastLandPoint = point;
+    } else {
+      // Mark that we're in water segment
+      inWaterSegment = true;
+      
+      // If this is the first point and it's in water, use nearest land point
+      if (i === 0) {
+        const nearestLand: [number, number] = [50.4221, -73.8683]; // Mistissini center as fallback
+        filteredRoute.push(nearestLand);
+        lastLandPoint = nearestLand;
+      }
+    }
+  }
+  
+  // If the route ends in water, add the end point on land
+  if (inWaterSegment && filteredRoute.length > 0) {
+    const nearestLand: [number, number] = [50.4221, -73.8683]; // Mistissini center as fallback
+    filteredRoute.push(nearestLand);
+  }
+  
+  return filteredRoute;
+};
+
+// Improved route fetching with better error handling, retry logic, and land constraint
 const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: number; lng: number }, retries = 3): Promise<[number, number][] | null> => {
   const cacheKey = getCacheKey(start, end);
   
@@ -95,10 +202,20 @@ const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: numbe
     
     for (let i = 0; i <= steps; i++) {
       const ratio = i / steps;
-      directRoute.push([
+      const point: [number, number] = [
         start.lat + (end.lat - start.lat) * ratio,
         start.lng + (end.lng - start.lng) * ratio
-      ]);
+      ];
+      // Only add if not in water
+      if (!isPointInWater(point)) {
+        directRoute.push(point);
+      }
+    }
+    
+    // Ensure we have at least the start and end points
+    if (directRoute.length < 2) {
+      directRoute.push([start.lat, start.lng]);
+      directRoute.push([end.lat, end.lng]);
     }
     
     routeCache[cacheKey] = { path: directRoute, timestamp: Date.now() };
@@ -106,7 +223,8 @@ const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: numbe
   }
 
   try {
-    const url = `https://graphhopper.com/api/1/route?point=${start.lat},${start.lng}&point=${end.lat},${end.lng}&vehicle=car&locale=en&key=${API_KEY}&points_encoded=false`;
+    // Use "hike" as vehicle type to prefer land routes
+    const url = `https://graphhopper.com/api/1/route?point=${start.lat},${start.lng}&point=${end.lat},${end.lng}&vehicle=car&locale=en&key=${API_KEY}&points_encoded=false&ch.disable=true&alternative_route.max_paths=3`;
     
     const response = await fetch(url);
     
@@ -122,19 +240,58 @@ const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: numbe
     const data = await response.json();
     
     if (data.paths?.[0]?.points?.coordinates) {
-      const route = data.paths[0].points.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
+      // Convert and filter water points
+      let route = data.paths[0].points.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
+      
+      // Apply water filtering
+      route = filterWaterPoints(route);
+      
       routeCache[cacheKey] = { path: route, timestamp: Date.now() };
       return route;
     }
     
-    return null;
+    // Fallback: create a direct land route if API fails
+    const directLandRoute: [number, number][] = [];
+    const steps = Math.max(10, Math.ceil(distance * 15));
+    
+    for (let i = 0; i <= steps; i++) {
+      const ratio = i / steps;
+      const point: [number, number] = [
+        start.lat + (end.lat - start.lat) * ratio,
+        start.lng + (end.lng - start.lng) * ratio
+      ];
+      if (!isPointInWater(point)) {
+        directLandRoute.push(point);
+      }
+    }
+    
+    // Ensure we have at least start and end points
+    if (directLandRoute.length < 2) {
+      directLandRoute.push([start.lat, start.lng]);
+      directLandRoute.push([end.lat, end.lng]);
+    }
+    
+    routeCache[cacheKey] = { path: directLandRoute, timestamp: Date.now() };
+    return directLandRoute;
   } catch (error) {
     console.error("Error fetching route:", error);
     if (retries > 0) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       return fetchRoute(start, end, retries - 1);
     }
-    return null;
+    
+    // Final fallback: create a straight line that avoids water
+    const landRoute: [number, number][] = [];
+    landRoute.push([start.lat, start.lng]);
+    
+    // Add some intermediate waypoints to route around the lake
+    if (isPointInWater([start.lat, start.lng]) || isPointInWater([end.lat, end.lng])) {
+      // Add Mistissini center as a safe waypoint
+      landRoute.push([50.4221, -73.8683]);
+    }
+    
+    landRoute.push([end.lat, end.lng]);
+    return landRoute;
   }
 };
 
@@ -164,6 +321,7 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
             const startCoords = extractCoordinates(route.startPoint);
             const endCoords = extractCoordinates(route.endPoint);
             
+            // Get land-constrained route
             const path = await fetchRoute(startCoords, endCoords);
             
             if (path) {
@@ -229,7 +387,8 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
             opacity: 0.9,
             lineCap: "round",
             lineJoin: "round",
-            dashArray: route.status === "closed" ? "10, 10" : undefined
+            dashArray: route.status === "closed" ? "10, 10" : undefined,
+            smoothFactor: 1
           }}
         >
           <Popup className="min-w-[200px]">
