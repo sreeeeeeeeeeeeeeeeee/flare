@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from "react";
 import { Polyline, Popup } from "react-leaflet";
 import { EvacuationRouteType } from "@/types/emergency";
@@ -57,7 +58,7 @@ const extractCoordinates = (locationString: string): { lat: number; lng: number 
   return { lat: 50.4175, lng: -73.8682 };
 };
 
-// Cache for route data to avoid excessive API calls
+// Persistent cache for route data to avoid excessive API calls
 const routeCache: Record<string, [number, number][]> = {};
 
 // Function to generate a cache key for routes
@@ -90,9 +91,8 @@ const fetchRoute = async (start: { lat: number; lng: number }, end: { lat: numbe
     return directRoute;
   }
   
-  const url = `https://graphhopper.com/api/1/route?point=${start.lat},${start.lng}&point=${end.lat},${end.lng}&vehicle=car&locale=en&key=${API_KEY}&points_encoded=false`;
-
   try {
+    const url = `https://graphhopper.com/api/1/route?point=${start.lat},${start.lng}&point=${end.lat},${end.lng}&vehicle=car&locale=en&key=${API_KEY}&points_encoded=false`;
     const response = await fetch(url);
     const data = await response.json();
     
