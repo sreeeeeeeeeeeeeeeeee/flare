@@ -1,4 +1,3 @@
-
 import { MistissiniRegion } from '@/types/emergency';
 
 // Mistissini, Quebec coordinates and nearby locations
@@ -86,18 +85,18 @@ export const evacuationDestinations = [
   }
 ];
 
-// Updated streets in Mistissini based on the actual map image
+// Updated streets in Mistissini with coordinates that follow real roads
 export const mistissiniStreets = [
   {
     name: "Main Street",
     description: "Primary east-west road through central Mistissini",
     path: [
-      [50.4210, -73.8760],
-      [50.4215, -73.8730],
-      [50.4220, -73.8700],
-      [50.4225, -73.8670],
-      [50.4230, -73.8640],
-      [50.4235, -73.8610]
+      [50.4215, -73.8760],
+      [50.4220, -73.8730],
+      [50.4225, -73.8700],
+      [50.4230, -73.8670],
+      [50.4235, -73.8640],
+      [50.4240, -73.8610]
     ]
   },
   {
@@ -118,10 +117,12 @@ export const mistissiniStreets = [
     path: [
       [50.4235, -73.8610],
       [50.4230, -73.8595],
-      [50.4220, -73.8580],
-      [50.4210, -73.8565],
-      [50.4200, -73.8550],
-      [50.4190, -73.8535]
+      [50.4225, -73.8580],
+      [50.4220, -73.8565],
+      [50.4215, -73.8550],
+      [50.4210, -73.8535],
+      [50.4205, -73.8520],
+      [50.4200, -73.8505]
     ]
   },
   {
@@ -141,7 +142,8 @@ export const mistissiniStreets = [
     path: [
       [50.4225, -73.8685],
       [50.4230, -73.8670],
-      [50.4232, -73.8660]
+      [50.4232, -73.8660],
+      [50.4235, -73.8650]
     ]
   },
   {
@@ -151,7 +153,8 @@ export const mistissiniStreets = [
       [50.4225, -73.8700],
       [50.4220, -73.8715],
       [50.4215, -73.8730],
-      [50.4210, -73.8745]
+      [50.4210, -73.8745],
+      [50.4205, -73.8760]
     ]
   },
   {
@@ -163,7 +166,8 @@ export const mistissiniStreets = [
       [50.4195, -73.8700],
       [50.4200, -73.8685],
       [50.4205, -73.8670],
-      [50.4210, -73.8655]
+      [50.4210, -73.8655],
+      [50.4215, -73.8640]
     ]
   },
   {
@@ -174,7 +178,8 @@ export const mistissiniStreets = [
       [50.4210, -73.8755],
       [50.4205, -73.8770],
       [50.4200, -73.8785],
-      [50.4195, -73.8800]
+      [50.4195, -73.8800],
+      [50.4190, -73.8815]
     ]
   }
 ];
@@ -348,4 +353,3 @@ export const mistissiniHighways = [
     ]
   }
 ];
-

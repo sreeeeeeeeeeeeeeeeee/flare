@@ -238,8 +238,7 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
             weight: 5,
             opacity: 0.9,
             lineCap: "round",
-            lineJoin: "round",
-            smoothFactor: 1
+            lineJoin: "round"
           }}
         >
           <Popup>
