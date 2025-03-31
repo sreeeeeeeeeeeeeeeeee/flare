@@ -65,23 +65,29 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
               });
             }
           } else if (route.id === 'route-2') {
-            enhancedRoutes.push({
-              id: route.id,
-              path: mistissiniStreets.find(street => street.name === "Saint John Street")?.path as [number, number][],
-              status: route.status,
-              start: route.startPoint,
-              end: route.endPoint,
-              updatedAt: new Date()
-            });
+            const saintJohnStreet = mistissiniStreets.find(street => street.name === "Saint John Street");
+            if (saintJohnStreet && saintJohnStreet.path) {
+              enhancedRoutes.push({
+                id: route.id,
+                path: saintJohnStreet.path,
+                status: route.status,
+                start: route.startPoint,
+                end: route.endPoint,
+                updatedAt: new Date()
+              });
+            }
           } else if (route.id === 'route-3') {
-            enhancedRoutes.push({
-              id: route.id,
-              path: mistissiniHighways.find(highway => highway.name === "Route 167 to Chibougamau")?.path.slice(0, 15) as [number, number][],
-              status: route.status,
-              start: route.startPoint,
-              end: route.endPoint,
-              updatedAt: new Date()
-            });
+            const highway = mistissiniHighways.find(highway => highway.name === "Route 167 to Chibougamau");
+            if (highway && highway.path) {
+              enhancedRoutes.push({
+                id: route.id,
+                path: highway.path.slice(0, 15) as [number, number][],
+                status: route.status,
+                start: route.startPoint,
+                end: route.endPoint,
+                updatedAt: new Date()
+              });
+            }
           }
         }
       }

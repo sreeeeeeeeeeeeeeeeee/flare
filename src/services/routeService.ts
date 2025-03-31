@@ -95,14 +95,19 @@ export const initializeRoutes = async (
       
       // Fallback to predefined routes if API fails
       if (routeDef.id === 'route-1') {
-        calculatedRoutes.push({
-          id: routeDef.id,
-          path: mistissiniStreets.find(street => street.name === "Main Street")?.path as [number, number][],
-          status: routeDef.status,
-          start: routeDef.start,
-          end: routeDef.end,
-          updatedAt: new Date()
-        });
+        // Use the Main Street path for the Lake Shore to Eastern Mistissini route
+        const mainStreet = mistissiniStreets.find(street => street.name === "Main Street");
+        if (mainStreet) {
+          console.log("Using Main Street for open route");
+          calculatedRoutes.push({
+            id: routeDef.id,
+            path: mainStreet.path,
+            status: 'open', // Always ensure this route is open
+            start: routeDef.start,
+            end: routeDef.end,
+            updatedAt: new Date()
+          });
+        }
       } else if (routeDef.id === 'route-2') {
         calculatedRoutes.push({
           id: routeDef.id,
@@ -122,6 +127,22 @@ export const initializeRoutes = async (
           updatedAt: new Date()
         });
       }
+    }
+  }
+
+  // Ensure we have all three routes in the result
+  if (!calculatedRoutes.some(route => route.id === 'route-1')) {
+    // If route-1 is missing, add it with predefined path
+    const mainStreet = mistissiniStreets.find(street => street.name === "Main Street");
+    if (mainStreet) {
+      calculatedRoutes.push({
+        id: 'route-1',
+        path: mainStreet.path,
+        status: 'open',
+        start: 'Lake Shore',
+        end: 'Eastern Mistissini',
+        updatedAt: new Date()
+      });
     }
   }
 
