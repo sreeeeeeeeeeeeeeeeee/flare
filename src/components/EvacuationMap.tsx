@@ -7,8 +7,9 @@ import { getRandomStatus } from '@/utils/mapUtils';
 import { initializeRoutes } from '@/services/routeService';
 import RouteStatusLegend from './map/RouteStatusLegend';
 import RoutePolyline from './map/RoutePolyline';
+import { Skeleton } from './ui/skeleton';
 
-// Loading indicator component that works within MapContainer
+// Loading indicator component that works within the map container
 const LoadingOverlay = () => {
   return (
     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[1000] bg-background/80 backdrop-blur-sm p-4 rounded-md shadow-md border border-border">
@@ -52,17 +53,38 @@ const EvacuationMap = () => {
   }, []);
 
   return (
-    <div className="relative h-full w-full">
-      {/* Always show the legend regardless of loading state */}
-      <RouteStatusLegend />
+    <div className="relative h-full w-full bg-gray-900 rounded-md overflow-hidden flex flex-col">
+      {/* Always show the legend */}
+      <div className="p-4 bg-gray-800 text-white font-semibold">Evacuation Routes</div>
       
-      {/* Show loading overlay if still calculating routes */}
-      {isLoading && <LoadingOverlay />}
-      
-      {/* Render routes when they're available */}
-      {!isLoading && routes.map(route => (
-        <RoutePolyline key={route.id} route={route} />
-      ))}
+      <div className="relative flex-grow min-h-[200px]">
+        {/* Loading state with placeholder */}
+        {isLoading ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/70 p-4">
+            <div className="mb-6 text-white/80">Calculating evacuation routes...</div>
+            <Skeleton className="w-[80%] h-6 mb-2" />
+            <Skeleton className="w-[60%] h-6 mb-2" />
+            <Skeleton className="w-[70%] h-6" />
+            
+            {/* Show the legend even during loading */}
+            <div className="absolute bottom-4 right-4 z-10">
+              <RouteStatusLegend />
+            </div>
+          </div>
+        ) : (
+          /* Render routes when available */
+          routes.map(route => (
+            <RoutePolyline key={route.id} route={route} />
+          ))
+        )}
+        
+        {/* If not loading, show the legend in normal position */}
+        {!isLoading && (
+          <div className="absolute top-2 right-2 z-10">
+            <RouteStatusLegend />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
