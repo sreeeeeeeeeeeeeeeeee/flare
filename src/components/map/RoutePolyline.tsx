@@ -28,14 +28,19 @@ const RoutePolyline: React.FC<RoutePolylineProps> = ({ route }) => {
     return null;
   }
   
+  // Make sure the open route is very visible
+  const weight = route.status === 'open' ? 7 : 6;
+  const opacity = route.status === 'closed' ? 0.7 : 
+                  route.status === 'open' ? 1.0 : 0.9;
+  
   return (
     <Polyline
       key={route.id}
       positions={route.path}
       pathOptions={{
         color: statusConfig[route.status].color,
-        weight: 6,
-        opacity: route.status === 'closed' ? 0.7 : 0.9,
+        weight: weight,
+        opacity: opacity,
         lineCap: 'round',
         lineJoin: 'round',
         dashArray: route.status === 'closed' ? '10, 6' : 
