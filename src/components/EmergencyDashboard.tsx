@@ -1,11 +1,11 @@
 import React from 'react';
 
 const EmergencyDashboard = () => {
-  // Sample data - replace with your actual route data
+  // Sample data - updated to match the rest of the application
   const activeRoutes = [
     {
       name: "Main Street → Saint John Street",
-      status: "active",
+      status: "open",
       distance: "3.2 km",
       updated: "13:50",
       color: "text-green-500"
@@ -19,12 +19,26 @@ const EmergencyDashboard = () => {
     },
     {
       name: "Dropose Industrial Zone → Hospital",
-      status: "open",
+      status: "closed",
       distance: "5.7 km",
       updated: "13:15",
-      color: "text-blue-500"
+      color: "text-red-500"
     }
   ];
+
+  // Function to get the appropriate color based on status
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'open':
+        return 'text-green-500 bg-green-50';
+      case 'congested':
+        return 'text-amber-500 bg-amber-50';
+      case 'closed':
+        return 'text-red-500 bg-red-50';
+      default:
+        return 'text-blue-500 bg-blue-50';
+    }
+  };
 
   return (
     <div className="p-4 bg-white rounded-lg shadow">
@@ -77,7 +91,7 @@ const EmergencyDashboard = () => {
         </div>
       </div>
 
-      {/* Enhanced Evacuation Routes Section */}
+      {/* Enhanced Evacuation Routes Section - Updated with status badges */}
       <div className="mb-6">
         <h3 className="font-bold mb-3">Evacuation Routes</h3>
         {activeRoutes.length > 0 ? (
@@ -86,7 +100,7 @@ const EmergencyDashboard = () => {
               <div key={index} className="border-l-4 border-blue-500 pl-3 py-1">
                 <div className="flex justify-between items-start">
                   <span className="font-medium">{route.name}</span>
-                  <span className={`text-sm font-semibold ${route.color}`}>
+                  <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${getStatusColor(route.status)}`}>
                     {route.status.toUpperCase()}
                   </span>
                 </div>
@@ -100,6 +114,25 @@ const EmergencyDashboard = () => {
         ) : (
           <div className="text-gray-500 italic">Calculating evacuation routes...</div>
         )}
+      </div>
+
+      {/* Add status legend */}
+      <div className="mb-6">
+        <h4 className="text-sm font-medium mb-2">Route Status Legend</h4>
+        <div className="flex space-x-4">
+          <div className="flex items-center">
+            <div className="w-3 h-3 rounded-full bg-green-500 mr-1"></div>
+            <span className="text-xs">Open</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 rounded-full bg-amber-500 mr-1"></div>
+            <span className="text-xs">Congested</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 rounded-full bg-red-500 mr-1"></div>
+            <span className="text-xs">Closed</span>
+          </div>
+        </div>
       </div>
 
       {/* Map attribution - unchanged */}
