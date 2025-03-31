@@ -1,13 +1,13 @@
 
 import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polygon, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapDataType } from '@/types/emergency';
-import { Flame, TreePine, MapPin, Navigation } from 'lucide-react';
-import { mistissiniLocation, mistissiniStreets, mistissiniHighways } from '@/services/mistissiniData';
-import EvacuationRoutes from './EvacuationRoutes';
+import { Flame, TreePine } from 'lucide-react';
+import { mistissiniLocation } from '@/services/mistissiniData';
+import EvacuationMap from './EvacuationMap';
 
 // Fix Leaflet marker icon issue
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -128,10 +128,8 @@ const EmergencyMap = ({ data, isLoading }: EmergencyMapProps) => {
         </Popup>
       </Marker>
       
-      {/* The gray dotted lines for streets and highways have been removed */}
-      
-      {/* Use GraphHopper API to generate evacuation routes - explicitly set standalone to false */}
-      <EvacuationRoutes routes={data.evacuationRoutes} standalone={false} />
+      {/* Use the new EvacuationMap component for road-based routes */}
+      <EvacuationMap />
       
       {/* Danger zones - Forest Fires */}
       {data.dangerZones.map((zone) => {
