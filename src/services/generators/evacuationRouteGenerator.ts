@@ -1,5 +1,6 @@
+
 import { EvacuationRouteType } from '@/types/emergency';
-import { mistissiniStreets, mistissiniHighways } from '../mistissiniData';
+import { mistissiniStreets, mistissiniHighways } from '../mistissini';
 
 // IMPROVED: Generate evacuation routes that follow actual Mistissini streets
 export const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {

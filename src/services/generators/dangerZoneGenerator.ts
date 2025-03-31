@@ -1,6 +1,6 @@
 
 import { DangerZoneType } from '@/types/emergency';
-import { mistissiniRegions, mistissiniForestRegions } from '../mistissiniData';
+import { mistissiniRegions, mistissiniForestRegions } from '../mistissini';
 
 // Generate a much smaller forest fire zone around Mistissini
 export const generateForestFireZone = (nearRegion: number, id: string): DangerZoneType => {

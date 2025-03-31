@@ -1,6 +1,6 @@
 
 import { ResponderType, DangerZoneType } from '@/types/emergency';
-import { mistissiniLocation, evacuationDestinations } from '../mistissiniData';
+import { mistissiniLocation, evacuationDestinations } from '../mistissini';
 
 // Create drone responders positioned near danger zones
 export const generateDroneResponders = (dangerZones: DangerZoneType[]) => {

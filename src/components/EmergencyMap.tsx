@@ -4,7 +4,7 @@ import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapDataType } from '@/types/emergency';
-import { mistissiniLocation } from '@/services/mistissiniData';
+import { mistissiniLocation } from '@/services/mistissini';
 import EvacuationMap from './EvacuationMap';
 import MapUpdater from './map/MapUpdater';
 import DangerZones from './map/DangerZones';
