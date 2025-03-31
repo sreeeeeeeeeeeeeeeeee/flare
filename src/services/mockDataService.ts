@@ -93,11 +93,21 @@ const generateStreetEvacuationRoutes = (): EvacuationRouteType[] => {
       // Convert path coordinates to the format expected by GeoJSON (lng, lat)
       const coordinates = street.path.map(point => [point[1], point[0]]);
       
+      // Explicitly assign different statuses to ensure we have examples of each
+      let status: 'open' | 'congested' | 'closed';
+      if (index === 0) {
+        status = 'congested';
+      } else if (index === 1) {
+        status = 'closed';
+      } else {
+        status = 'open';
+      }
+      
       routes.push({
         id: `route-street-${index + 1}`,
         startPoint,
         endPoint,
-        status: Math.random() > 0.7 ? "congested" : "open",
+        status,
         estimatedTime: 5 + Math.floor(Math.random() * 10), // 5-15 minutes
         transportMethods: ['car', 'emergency', 'foot'],
         routeName: street.name,

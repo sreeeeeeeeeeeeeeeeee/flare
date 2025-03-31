@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from 'react';
 import { Polyline, Popup } from 'react-leaflet';
 import { EvacuationRouteType } from '@/types/emergency';
@@ -254,7 +253,7 @@ const EvacuationRoutes = ({ routes, standalone = false }: EvacuationRoutesProps)
                 <span className="text-muted-foreground">Status:</span>
                 <span className={`font-medium ${
                   route.status === "open" ? "text-green-600" :
-                  route.status === "congested" ? "text-yellow-600" : "text-red-600"
+                  route.status === "congested" ? "text-orange-600" : "text-red-600"
                 }`}>
                   {route.status}
                 </span>
