@@ -11,6 +11,12 @@ interface EvacuationRoutesPanelProps {
 }
 
 const EvacuationRoutesPanel = ({ computedRoutes, isLoading }: EvacuationRoutesPanelProps) => {
+  // Sort routes to ensure consistent display order: open, congested, closed
+  const sortedRoutes = [...computedRoutes].sort((a, b) => {
+    const statusOrder = { open: 0, congested: 1, closed: 2 };
+    return statusOrder[a.status] - statusOrder[b.status];
+  });
+
   return (
     <div className="mb-6 bg-slate-950/5 p-4 rounded-lg">
       <h3 className="font-bold text-lg mb-4 flex items-center">
@@ -28,9 +34,9 @@ const EvacuationRoutesPanel = ({ computedRoutes, isLoading }: EvacuationRoutesPa
           </div>
           <div>Calculating evacuation routes...</div>
         </div>
-      ) : computedRoutes.length > 0 ? (
+      ) : sortedRoutes.length > 0 ? (
         <div className="space-y-3">
-          {computedRoutes.map((route) => (
+          {sortedRoutes.map((route) => (
             <div key={route.id} className="bg-white border border-slate-200 rounded-md shadow-sm p-3">
               <div className="flex justify-between items-start">
                 <div className="flex-1">

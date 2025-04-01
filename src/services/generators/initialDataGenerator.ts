@@ -19,7 +19,7 @@ export const generateInitialData = (): MapDataType => {
   // Generate initial video feeds
   const initialVideoFeeds = generateInitialVideoFeeds();
   
-  // Define fixed evacuation routes with consistent statuses
+  // Define fixed evacuation routes with consistent statuses in three distinct directions
   const fixedEvacuationRoutes = [
     {
       id: 'route-1',
@@ -32,12 +32,15 @@ export const generateInitialData = (): MapDataType => {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          [-73.8760, 50.4215],
-          [-73.8730, 50.4220],
-          [-73.8700, 50.4225],
-          [-73.8670, 50.4230],
-          [-73.8640, 50.4235],
-          [-73.8610, 50.4240]
+          // Eastern route - Open route going east
+          [-73.8700, 50.4220],
+          [-73.8670, 50.4225],
+          [-73.8640, 50.4230],
+          [-73.8610, 50.4235],
+          [-73.8580, 50.4240],
+          [-73.8550, 50.4245],
+          [-73.8520, 50.4250],
+          [-73.8490, 50.4255]
         ]
       }
     },
@@ -52,12 +55,15 @@ export const generateInitialData = (): MapDataType => {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
+          // North-South route - Congested route going north to south
           [-73.8685, 50.4260],
           [-73.8685, 50.4245],
           [-73.8685, 50.4230],
           [-73.8685, 50.4215],
           [-73.8685, 50.4200],
-          [-73.8685, 50.4185]
+          [-73.8685, 50.4185],
+          [-73.8685, 50.4170],
+          [-73.8685, 50.4155]
         ]
       }
     },
@@ -72,16 +78,17 @@ export const generateInitialData = (): MapDataType => {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          [-73.8640, 50.4230],
-          [-73.8620, 50.4300],
-          [-73.8560, 50.4380],
-          [-73.8510, 50.4470],
-          [-73.8460, 50.4560],
-          [-73.8410, 50.4650],
-          [-73.8360, 50.4740],
-          [-73.8310, 50.4830],
-          [-73.8260, 50.4920],
-          [-73.8210, 50.5010]
+          // Northwestern route - Closed route going northwest to Chibougamau
+          [-73.8680, 50.4220],
+          [-73.8700, 50.4240],
+          [-73.8720, 50.4260],
+          [-73.8740, 50.4280],
+          [-73.8760, 50.4300],
+          [-73.8780, 50.4320],
+          [-73.8800, 50.4340],
+          [-73.8820, 50.4360],
+          [-73.8840, 50.4380],
+          [-73.8860, 50.4400]
         ]
       }
     }

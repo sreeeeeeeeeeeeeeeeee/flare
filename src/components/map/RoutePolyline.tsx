@@ -38,7 +38,8 @@ const RoutePolyline: React.FC<RoutePolylineProps> = ({ route }) => {
           opacity: 1.0,
           dashArray: undefined,
           lineCap: 'round' as const,
-          lineJoin: 'round' as const
+          lineJoin: 'round' as const,
+          zIndex: 1000 // Higher z-index to draw on top
         };
       case 'congested':
         return {
@@ -47,7 +48,8 @@ const RoutePolyline: React.FC<RoutePolylineProps> = ({ route }) => {
           opacity: 0.9,
           dashArray: '15, 10',
           lineCap: 'round' as const,
-          lineJoin: 'round' as const
+          lineJoin: 'round' as const,
+          zIndex: 900
         };
       case 'closed':
         return {
@@ -56,13 +58,15 @@ const RoutePolyline: React.FC<RoutePolylineProps> = ({ route }) => {
           opacity: 0.7,
           dashArray: '10, 6',
           lineCap: 'round' as const,
-          lineJoin: 'round' as const
+          lineJoin: 'round' as const,
+          zIndex: 800
         };
       default:
         return {
           color: '#6b7280', // Gray fallback
           weight: 6,
-          opacity: 0.9
+          opacity: 0.9,
+          zIndex: 700
         };
     }
   };
