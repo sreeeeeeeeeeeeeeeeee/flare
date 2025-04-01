@@ -4,6 +4,7 @@ export const mistissiniHighways = [
   {
     name: "Route 167 to Chibougamau",
     description: "Main highway connecting Mistissini to Chibougamau",
+    status: "closed", // Mark this route as closed
     path: [
       // Mistissini to Chibougamau (more realistic route following actual terrain)
       [50.4230, -73.8640], // Mistissini start (connecting to Main Street)
