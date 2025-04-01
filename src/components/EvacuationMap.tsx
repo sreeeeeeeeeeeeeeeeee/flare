@@ -58,10 +58,10 @@ const EvacuationMap = () => {
         id: 'route-3', 
         start: 'Mistissini', 
         end: 'Chibougamau', 
-        status: 'closed' as const, // Ensure this route is marked as closed
+        status: 'closed' as const,
         // Different coordinates for the highway route
-        startCoords: [50.4230, -73.8640] as [number, number], // Starting point matches Chibougamau highway
-        endCoords: [50.8060, -73.7640] as [number, number] // Point along the route to Chibougamau
+        startCoords: [50.4220, -73.8680] as [number, number],
+        endCoords: [50.4400, -73.8860] as [number, number]
       }
     ];
 
