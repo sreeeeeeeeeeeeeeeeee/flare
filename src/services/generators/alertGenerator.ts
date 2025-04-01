@@ -43,6 +43,46 @@ export const generateInitialAlerts = (): AlertType[] => {
       location: 'Mistissini',
       isNew: false,
       visibility: 'public'
+    },
+    {
+      id: 'alert-5', 
+      severity: 'info',
+      title: 'Evacuation Center Open',
+      message: 'Community Center on Lake Shore is now open as an evacuation shelter. Food and medical aid available.',
+      time: '15:20',
+      location: 'Eastern Mistissini',
+      isNew: true,
+      visibility: 'public'
+    },
+    {
+      id: 'alert-6', 
+      severity: 'warning',
+      title: 'Water Supply Notice',
+      message: 'Residents in Southern Mistissini may experience water pressure drops. Fill containers as precaution.',
+      time: '16:45',
+      location: 'Southern Mistissini',
+      isNew: true,
+      visibility: 'public'
+    },
+    {
+      id: 'alert-7', 
+      severity: 'critical',
+      title: 'Medical Emergency',
+      message: 'Medical assistance team stationed at Main Street intersection. Seek help there if needed.',
+      time: '17:10',
+      location: 'Central Mistissini',
+      isNew: false,
+      visibility: 'public'
+    },
+    {
+      id: 'alert-8', 
+      severity: 'info',
+      title: 'School Closure',
+      message: 'All schools in Mistissini closed until further notice. Online learning details to follow.',
+      time: '14:30',
+      location: 'Mistissini District',
+      isNew: true,
+      visibility: 'public'
     }
   ];
 };
@@ -62,38 +102,66 @@ export const generateNewAlert = (routes: EvacuationRouteType[]): AlertType | nul
     const randomRoute = streetRoutes[Math.floor(Math.random() * streetRoutes.length)];
     const streetName = randomRoute?.routeName || "Main Street";
     
+    // Alert templates for different severity levels
     const alertTemplates = {
       critical: {
-        title: 'Street Closure Alert',
+        titles: [
+          'Street Closure Alert',
+          'Immediate Evacuation',
+          'Emergency Shelter Update',
+          'Medical Emergency'
+        ],
         messages: [
           `${streetName} is now closed due to fire. Use alternate routes.`,
           `Evacuation required immediately from ${streetName} area.`,
-          `Fire has reached ${streetName}. All residents must evacuate now.`
+          `Fire has reached ${streetName}. All residents must evacuate now.`,
+          `Emergency shelter at Community Center has reached capacity. New shelter open at School Gymnasium.`,
+          `Medical emergency station relocated from ${streetName} to Town Hall due to fire spread.`
         ]
       },
       warning: {
-        title: 'Street Congestion Warning',
+        titles: [
+          'Street Congestion Warning',
+          'Water Supply Notice',
+          'Power Outage Alert',
+          'Animal Shelter Update'
+        ],
         messages: [
           `Heavy traffic on ${streetName}. Expect delays during evacuation.`,
           `Smoke reducing visibility on ${streetName}. Proceed with caution.`,
-          `${streetName} experiencing congestion. Consider alternative routes.`
+          `${streetName} experiencing congestion. Consider alternative routes.`,
+          `Water pressure reduced in northern district. Conservation recommended.`,
+          `Temporary power outages expected in central Mistissini as lines are secured.`,
+          `Pet emergency shelter now accepting animals at Recreation Center.`
         ]
       },
       info: {
-        title: 'Street Update',
+        titles: [
+          'Street Update',
+          'Community Resources',
+          'School Status',
+          'Public Transportation'
+        ],
         messages: [
           `${streetName} remains open for evacuation.`,
           `Emergency services stationed along ${streetName} to assist evacuation.`,
-          `${streetName} has been designated as priority evacuation route.`
+          `${streetName} has been designated as priority evacuation route.`,
+          `Charging stations for phones and devices available at Community Center.`,
+          `Free transport shuttles running every 15 minutes from Town Square.`,
+          `Public wifi hotspots established at all evacuation centers for communication.`,
+          `School closures extended through end of week. Updates available on district website.`
         ]
       }
     };
     
+    const titleArray = alertTemplates[newSeverity].titles;
+    const messageArray = alertTemplates[newSeverity].messages;
+    
     return {
       id: `alert-${Math.floor(Math.random() * 1000)}`,
       severity: newSeverity,
-      title: alertTemplates[newSeverity].title,
-      message: alertTemplates[newSeverity].messages[Math.floor(Math.random() * alertTemplates[newSeverity].messages.length)],
+      title: titleArray[Math.floor(Math.random() * titleArray.length)],
+      message: messageArray[Math.floor(Math.random() * messageArray.length)],
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       location: 'Mistissini',
       isNew: true,
