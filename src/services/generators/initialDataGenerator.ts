@@ -33,12 +33,13 @@ export const generateInitialData = (): MapDataType => {
         type: 'LineString' as const,
         coordinates: [
           // Diagonal northeast route using Spruce Street - Open route going northeast
-          [-73.8550, 50.4190],
-          [-73.8570, 50.4200],
-          [-73.8590, 50.4210],
-          [-73.8610, 50.4220],
-          [-73.8630, 50.4230],
-          [-73.8650, 50.4240]
+          // Using coordinates within GraphHopper's coverage area
+          [-73.8650, 50.4195],
+          [-73.8640, 50.4200],
+          [-73.8630, 50.4205],
+          [-73.8620, 50.4210],
+          [-73.8610, 50.4215],
+          [-73.8600, 50.4220]
         ]
       }
     },
