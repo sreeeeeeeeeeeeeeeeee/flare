@@ -164,3 +164,26 @@
   color: #9ca3af;
   text-align: right;
 }
+
+/* Route status specific styling */
+.route-status-open {
+  /* Open routes have solid lines with slight pulsing effect */
+  animation: route-pulse 4s infinite;
+}
+
+.route-status-congested {
+  /* Congested routes have a different pattern */
+  filter: drop-shadow(0 0 2px rgba(234, 179, 8, 0.3));
+}
+
+@keyframes route-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 1;
+  }
+}
