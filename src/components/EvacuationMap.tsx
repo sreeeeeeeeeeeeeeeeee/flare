@@ -27,25 +27,6 @@ const LoadingOverlay = () => {
   );
 };
 
-// Define a hardcoded open route that will always be available
-const getHardcodedOpenRoute = (): Route => {
-  return {
-    id: 'hardcoded-open-route',
-    path: [
-      [50.4215, -73.8760],
-      [50.4220, -73.8730],
-      [50.4225, -73.8700],
-      [50.4230, -73.8670],
-      [50.4235, -73.8640],
-      [50.4240, -73.8610]
-    ],
-    status: 'open',
-    start: 'Emergency Meeting Point',
-    end: 'Safe Zone Checkpoint',
-    updatedAt: new Date()
-  };
-};
-
 const EvacuationMap = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,28 +45,14 @@ const EvacuationMap = () => {
         // Initialize routes with fixed statuses
         const calculatedRoutes = await initializeRoutes(routeDefinitions, LOCATIONS);
         
-        // Ensure we ALWAYS have an open route by adding our hardcoded one if needed
-        const hasOpenRoute = calculatedRoutes.some(route => route.status === 'open');
-        
-        let finalRoutes = [...calculatedRoutes];
-        
-        if (!hasOpenRoute) {
-          console.log("Adding hardcoded open route since no open route was found");
-          finalRoutes.push(getHardcodedOpenRoute());
-        }
-        
-        if (finalRoutes.length > 0) {
-          console.log("Setting routes:", finalRoutes);
-          setRoutes(finalRoutes);
+        if (calculatedRoutes.length > 0) {
+          console.log("Setting routes:", calculatedRoutes);
+          setRoutes(calculatedRoutes);
         } else {
           console.error("Failed to initialize routes - no routes returned");
-          // Always provide at least the hardcoded route
-          setRoutes([getHardcodedOpenRoute()]);
         }
       } catch (error) {
         console.error("Error loading routes:", error);
-        // Always provide at least the hardcoded route on error
-        setRoutes([getHardcodedOpenRoute()]);
       } finally {
         setIsLoading(false);
       }
