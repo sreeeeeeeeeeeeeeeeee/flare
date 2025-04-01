@@ -20,15 +20,15 @@ const fixedEvacuationRoutes = [
     transportMethods: ['car', 'emergency'] as Array<'car' | 'foot' | 'emergency'>,
     geometry: {
       type: 'LineString' as const,
-      coordinates: mistissiniStreets.find(street => street.name === "Main Street")?.path.map(
+      coordinates: mistissiniStreets.find(street => street.name === "Lakeshore Drive")?.path.map(
         ([lat, lng]) => [lng, lat] // Convert from [lat, lng] to GeoJSON [lng, lat]
       ) || [
-        [-73.8760, 50.4215],
-        [-73.8730, 50.4220],
-        [-73.8700, 50.4225],
-        [-73.8670, 50.4230],
-        [-73.8640, 50.4235],
-        [-73.8610, 50.4240]
+        [-73.8760, 50.4200],
+        [-73.8730, 50.4205],
+        [-73.8700, 50.4210],
+        [-73.8670, 50.4215],
+        [-73.8640, 50.4220],
+        [-73.8610, 50.4225]
       ]
     }
   },

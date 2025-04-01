@@ -1,4 +1,3 @@
-
 /**
  * Route calculation service
  */
@@ -93,7 +92,7 @@ export const initializeRoutes = async (
     } catch (error) {
       console.error(`Error calculating route ${routeDef.id}:`, error);
       
-      // Fallback to predefined routes if API fails
+      // Fallback to predefined routes if API fails - each with a unique path
       if (routeDef.id === 'route-1') {
         // Use Lakeshore Drive for the eastern route (open)
         const lakeshore = mistissiniStreets.find(street => street.name === "Lakeshore Drive");
@@ -157,7 +156,7 @@ export const initializeRoutes = async (
   const routeIds = calculatedRoutes.map(r => r.id);
   
   if (!routeIds.includes('route-1')) {
-    // If open route is missing, add fallback eastern route
+    // If open route is missing, add fallback eastern route using Lakeshore Drive
     const lakeshore = mistissiniStreets.find(street => street.name === "Lakeshore Drive");
     if (lakeshore) {
       const typedPath = lakeshore.path as [number, number][];

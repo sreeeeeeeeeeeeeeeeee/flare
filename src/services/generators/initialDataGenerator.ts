@@ -32,15 +32,15 @@ export const generateInitialData = (): MapDataType => {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          // Eastern route - Open route going east
-          [-73.8700, 50.4220],
-          [-73.8670, 50.4225],
-          [-73.8640, 50.4230],
-          [-73.8610, 50.4235],
-          [-73.8580, 50.4240],
-          [-73.8550, 50.4245],
-          [-73.8520, 50.4250],
-          [-73.8490, 50.4255]
+          // Eastern route using Lakeshore Drive - Open route going east (slightly south of Main Street)
+          [-73.8700, 50.4200],
+          [-73.8670, 50.4205],
+          [-73.8640, 50.4210],
+          [-73.8610, 50.4215],
+          [-73.8580, 50.4220],
+          [-73.8550, 50.4225],
+          [-73.8520, 50.4230],
+          [-73.8490, 50.4235]
         ]
       }
     },

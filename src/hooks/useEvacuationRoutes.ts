@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Route } from '@/types/mapTypes';
 import { EvacuationRouteType } from '@/types/emergency';
@@ -51,12 +50,12 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
           
           // Fallback to predefined routes if API fails
           if (route.id === 'route-1') {
-            // Ensure the open route is always visible with a proper path
-            const mainStreet = mistissiniStreets.find(street => street.name === "Main Street");
-            if (mainStreet && mainStreet.path) {
-              console.log("Using fallback path for open route:", mainStreet.path);
+            // Ensure the open route is always visible with a distinct path
+            const lakeshore = mistissiniStreets.find(street => street.name === "Lakeshore Drive");
+            if (lakeshore && lakeshore.path) {
+              console.log("Using fallback path for open route:", lakeshore.path);
               // Explicitly cast the path to [number, number][] to fix type error
-              const typedPath = mainStreet.path as [number, number][];
+              const typedPath = lakeshore.path as [number, number][];
               enhancedRoutes.push({
                 id: route.id,
                 path: typedPath,
@@ -100,11 +99,11 @@ export const useEvacuationRoutes = (routes: EvacuationRouteType[]) => {
       
       // Ensure the open route (route-1) is always in the enhanced routes
       if (!enhancedRoutes.some(r => r.id === 'route-1')) {
-        const mainStreet = mistissiniStreets.find(street => street.name === "Main Street");
-        if (mainStreet && mainStreet.path) {
+        const lakeshore = mistissiniStreets.find(street => street.name === "Lakeshore Drive");
+        if (lakeshore && lakeshore.path) {
           console.log("Forcing addition of open route");
           // Explicitly cast the path to [number, number][] to fix type error
-          const typedPath = mainStreet.path as [number, number][];
+          const typedPath = lakeshore.path as [number, number][];
           enhancedRoutes.push({
             id: 'route-1',
             path: typedPath,
