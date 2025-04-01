@@ -19,7 +19,7 @@ export const generateInitialData = (): MapDataType => {
   // Generate initial video feeds
   const initialVideoFeeds = generateInitialVideoFeeds();
   
-  // Define fixed evacuation routes with consistent statuses
+  // Define three fixed evacuation routes in different directions with consistent statuses
   const fixedEvacuationRoutes = [
     {
       id: 'route-1',
@@ -32,6 +32,7 @@ export const generateInitialData = (): MapDataType => {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
+          // East route - Main Street
           [-73.8760, 50.4215],
           [-73.8730, 50.4220],
           [-73.8700, 50.4225],
@@ -52,6 +53,7 @@ export const generateInitialData = (): MapDataType => {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
+          // North-South route - Saint John Street
           [-73.8685, 50.4260],
           [-73.8685, 50.4245],
           [-73.8685, 50.4230],
@@ -72,6 +74,7 @@ export const generateInitialData = (): MapDataType => {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
+          // North-East route - Highway to Chibougamau
           [-73.8640, 50.4230],
           [-73.8620, 50.4300],
           [-73.8560, 50.4380],
