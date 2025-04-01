@@ -19,7 +19,8 @@ export const generateInitialData = (): MapDataType => {
   // Generate initial video feeds
   const initialVideoFeeds = generateInitialVideoFeeds();
   
-  // Define fixed evacuation routes with consistent statuses in three distinct directions
+  // Define fixed evacuation routes with coordinates that work well with the GraphHopper API
+  // These will be processed by the API in the map component
   const fixedEvacuationRoutes = [
     {
       id: 'route-1',
@@ -32,13 +33,9 @@ export const generateInitialData = (): MapDataType => {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          // Diagonal northeast route using Spruce Street - Open route going northeast
-          // Using coordinates within GraphHopper's coverage area
+          // Spruce Street coordinates - Open route going northeast
+          // These coordinates work well with GraphHopper's API
           [-73.8650, 50.4195],
-          [-73.8640, 50.4200],
-          [-73.8630, 50.4205],
-          [-73.8620, 50.4210],
-          [-73.8610, 50.4215],
           [-73.8600, 50.4220]
         ]
       }
@@ -54,14 +51,9 @@ export const generateInitialData = (): MapDataType => {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          // North-South route - Congested route going north to south
+          // North-South route - Congested route with different coordinates
+          // These are distinct from route-1 to avoid path overlap
           [-73.8685, 50.4260],
-          [-73.8685, 50.4245],
-          [-73.8685, 50.4230],
-          [-73.8685, 50.4215],
-          [-73.8685, 50.4200],
-          [-73.8685, 50.4185],
-          [-73.8685, 50.4170],
           [-73.8685, 50.4155]
         ]
       }
@@ -77,16 +69,9 @@ export const generateInitialData = (): MapDataType => {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          // Northwestern route - Closed route going northwest to Chibougamau
+          // Northwestern route - Closed route, different direction
+          // These coordinates create a distinct third path
           [-73.8680, 50.4220],
-          [-73.8700, 50.4240],
-          [-73.8720, 50.4260],
-          [-73.8740, 50.4280],
-          [-73.8760, 50.4300],
-          [-73.8780, 50.4320],
-          [-73.8800, 50.4340],
-          [-73.8820, 50.4360],
-          [-73.8840, 50.4380],
           [-73.8860, 50.4400]
         ]
       }

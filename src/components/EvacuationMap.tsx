@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { TileLayer, useMap } from 'react-leaflet';
+import { useMap } from 'react-leaflet';
 import { Route } from '@/types/mapTypes';
 import { LOCATIONS } from '@/utils/mapUtils';
 import { initializeRoutes } from '@/services/routeService';
@@ -31,23 +31,60 @@ const EvacuationMap = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const isInMapContainer = useIsInMapContainer();
+  const map = useMap();
 
   // Initialize routes on component mount
   useEffect(() => {
     const routeDefinitions = [
-      { id: 'route-1', start: 'Lake Shore', end: 'Eastern Mistissini', status: 'open' as const },
-      { id: 'route-2', start: 'Northern Mistissini', end: 'Southern Mistissini', status: 'congested' as const },
-      { id: 'route-3', start: 'Mistissini', end: 'Chibougamau', status: 'closed' as const }
+      { 
+        id: 'route-1', 
+        start: 'Spruce Street', 
+        end: 'Eastern Mistissini', 
+        status: 'open' as const,
+        // Use these specific coordinates for the Spruce Street route 
+        startCoords: [50.4195, -73.8650] as [number, number],
+        endCoords: [50.4220, -73.8600] as [number, number]
+      },
+      { 
+        id: 'route-2', 
+        start: 'Northern Mistissini', 
+        end: 'Southern Mistissini', 
+        status: 'congested' as const,
+        // Different coordinates for north-south route
+        startCoords: [50.4260, -73.8685] as [number, number],
+        endCoords: [50.4155, -73.8685] as [number, number]
+      },
+      { 
+        id: 'route-3', 
+        start: 'Mistissini', 
+        end: 'Chibougamau', 
+        status: 'closed' as const,
+        // Different coordinates for the highway route
+        startCoords: [50.4220, -73.8680] as [number, number],
+        endCoords: [50.4400, -73.8860] as [number, number]
+      }
     ];
 
     const loadRoutes = async () => {
       try {
-        // Initialize routes with fixed statuses
+        // Initialize routes with fixed statuses and specific coordinates
         const calculatedRoutes = await initializeRoutes(routeDefinitions, LOCATIONS);
         
         if (calculatedRoutes.length > 0) {
           console.log("Setting routes:", calculatedRoutes);
           setRoutes(calculatedRoutes);
+          
+          // Ensure the map view encompasses all routes
+          if (calculatedRoutes.length > 0 && map) {
+            const allPoints = calculatedRoutes.flatMap(route => route.path);
+            if (allPoints.length > 0) {
+              const bounds = allPoints.reduce(
+                (bounds, point) => bounds.extend(point),
+                map.getBounds()
+              );
+              map.fitBounds(bounds, { padding: [50, 50] });
+            }
+          }
         } else {
           console.error("Failed to initialize routes - no routes returned");
         }
@@ -59,7 +96,7 @@ const EvacuationMap = () => {
     };
 
     loadRoutes();
-  }, []);
+  }, [map]);
 
   // If we're not inside a MapContainer, show a standalone placeholder instead
   if (!isInMapContainer) {

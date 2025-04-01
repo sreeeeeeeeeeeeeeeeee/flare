@@ -1,3 +1,4 @@
+
 /**
  * Route calculation service
  */
@@ -55,9 +56,30 @@ const fetchRoadRoute = async (
   } catch (error) {
     console.error('GraphHopper API error:', error);
     
-    // Return direct line route as fallback
-    console.log('Using fallback straight line route');
-    return [start, end] as [number, number][];
+    // Generate a more realistic fallback path with multiple points
+    const generateFallbackPath = (start: [number, number], end: [number, number], complexity = 6): [number, number][] => {
+      const path: [number, number][] = [start];
+      const latDiff = end[0] - start[0];
+      const lngDiff = end[1] - start[1];
+      
+      // Create intermediate points with small random variations
+      for (let i = 1; i <= complexity; i++) {
+        const ratio = i / (complexity + 1);
+        const randomLat = (Math.random() - 0.5) * 0.001; // Small random deviation
+        const randomLng = (Math.random() - 0.5) * 0.001;
+        
+        path.push([
+          start[0] + latDiff * ratio + randomLat,
+          start[1] + lngDiff * ratio + randomLng
+        ]);
+      }
+      
+      path.push(end);
+      return path;
+    };
+    
+    console.log('Using fallback path with multiple points');
+    return generateFallbackPath(start, end);
   }
 };
 
@@ -65,7 +87,14 @@ const fetchRoadRoute = async (
  * Initializes routes with road-following paths
  */
 export const initializeRoutes = async (
-  routeDefinitions: Array<{ id: string; start: string; end: string, status: 'open' | 'congested' | 'closed' }>,
+  routeDefinitions: Array<{ 
+    id: string; 
+    start: string; 
+    end: string; 
+    status: 'open' | 'congested' | 'closed';
+    startCoords?: [number, number];
+    endCoords?: [number, number];
+  }>,
   locationMap: Record<string, [number, number]>
 ): Promise<Route[]> => {
   console.log("Initializing routes with API route calculation");
@@ -74,9 +103,14 @@ export const initializeRoutes = async (
   
   for (const routeDef of routeDefinitions) {
     try {
-      // Get start and end coordinates
-      const startCoords = locationMap[routeDef.start.toLowerCase()] || [50.4221, -73.8683] as [number, number];
-      const endCoords = locationMap[routeDef.end.toLowerCase()] || [50.4250, -73.8600] as [number, number];
+      // Use provided coordinates first, fall back to location map if not available
+      const startCoords = routeDef.startCoords || 
+        locationMap[routeDef.start.toLowerCase()] || 
+        [50.4221, -73.8683] as [number, number];
+        
+      const endCoords = routeDef.endCoords || 
+        locationMap[routeDef.end.toLowerCase()] || 
+        [50.4250, -73.8600] as [number, number];
       
       // Fetch road-following route
       const roadPath = await fetchRoadRoute(startCoords, endCoords);
@@ -94,11 +128,11 @@ export const initializeRoutes = async (
       
       // Fallback to predefined routes if API fails - each with a unique path
       if (routeDef.id === 'route-1') {
-        // Use Lakeshore Drive for the eastern route (open)
-        const lakeshore = mistissiniStreets.find(street => street.name === "Lakeshore Drive");
-        if (lakeshore) {
-          console.log("Using Lakeshore Drive for open route");
-          const typedPath = lakeshore.path as [number, number][];
+        // Use Spruce Street for the eastern route (open)
+        const spruce = mistissiniStreets.find(street => street.name === "Spruce Street");
+        if (spruce) {
+          console.log("Using Spruce Street for open route");
+          const typedPath = spruce.path as [number, number][];
           calculatedRoutes.push({
             id: routeDef.id,
             path: typedPath,
@@ -155,16 +189,16 @@ export const initializeRoutes = async (
   // Ensure we have all three routes, each with a different direction
   const routeIds = calculatedRoutes.map(r => r.id);
   
+  // Add fallback routes if any are missing
   if (!routeIds.includes('route-1')) {
-    // If open route is missing, add fallback eastern route using Lakeshore Drive
-    const lakeshore = mistissiniStreets.find(street => street.name === "Lakeshore Drive");
-    if (lakeshore) {
-      const typedPath = lakeshore.path as [number, number][];
+    const spruce = mistissiniStreets.find(street => street.name === "Spruce Street");
+    if (spruce) {
+      const typedPath = spruce.path as [number, number][];
       calculatedRoutes.push({
         id: 'route-1',
         path: typedPath,
         status: 'open',
-        start: 'Lake Shore',
+        start: 'Spruce Street',
         end: 'Eastern Mistissini',
         updatedAt: new Date()
       });
@@ -172,7 +206,6 @@ export const initializeRoutes = async (
   }
   
   if (!routeIds.includes('route-2')) {
-    // If congested route is missing, add fallback north-south route
     const saintJohn = mistissiniStreets.find(street => street.name === "Saint John Street");
     if (saintJohn) {
       const typedPath = saintJohn.path as [number, number][];
@@ -188,7 +221,6 @@ export const initializeRoutes = async (
   }
   
   if (!routeIds.includes('route-3')) {
-    // If closed route is missing, add fallback western route
     const western = mistissiniStreets.find(street => street.name === "Western Route");
     if (western) {
       const typedPath = western.path as [number, number][];
