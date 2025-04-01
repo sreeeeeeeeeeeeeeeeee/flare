@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -144,8 +145,8 @@
 }
 
 .status-badge.open {
-  background: rgba(22, 163, 74, 0.2);
-  color: #22c55e;
+  background: rgba(14, 165, 233, 0.2);
+  color: #0EA5E9;
 }
 
 .status-badge.congested {
@@ -166,8 +167,8 @@
 
 /* Route status specific styling */
 .route-status-open {
-  /* Open routes have solid lines with slight pulsing effect */
-  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.5));
+  /* Open routes get a distinctive glow and higher z-index */
+  filter: drop-shadow(0 0 8px rgba(14, 165, 233, 0.8));
   z-index: 1000 !important; /* Ensure open routes are on top */
 }
 
