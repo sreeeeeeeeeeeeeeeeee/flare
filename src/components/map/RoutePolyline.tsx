@@ -37,8 +37,8 @@ const RoutePolyline: React.FC<RoutePolylineProps> = ({ route }) => {
           weight: 8,
           opacity: 1.0,
           dashArray: undefined,
-          lineCap: 'round',
-          lineJoin: 'round'
+          lineCap: 'round' as const,
+          lineJoin: 'round' as const
         };
       case 'congested':
         return {
@@ -46,8 +46,8 @@ const RoutePolyline: React.FC<RoutePolylineProps> = ({ route }) => {
           weight: 7,
           opacity: 0.9,
           dashArray: '15, 10',
-          lineCap: 'round',
-          lineJoin: 'round'
+          lineCap: 'round' as const,
+          lineJoin: 'round' as const
         };
       case 'closed':
         return {
@@ -55,8 +55,8 @@ const RoutePolyline: React.FC<RoutePolylineProps> = ({ route }) => {
           weight: 6,
           opacity: 0.7,
           dashArray: '10, 6',
-          lineCap: 'round',
-          lineJoin: 'round'
+          lineCap: 'round' as const,
+          lineJoin: 'round' as const
         };
       default:
         return {

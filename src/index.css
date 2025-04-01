@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -168,14 +167,22 @@
 /* Route status specific styling */
 .route-status-open {
   /* Open routes have solid lines with slight pulsing effect */
-  animation: route-pulse 4s infinite;
+  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.5));
+  z-index: 1000 !important; /* Ensure open routes are on top */
 }
 
 .route-status-congested {
   /* Congested routes have a different pattern */
-  filter: drop-shadow(0 0 2px rgba(234, 179, 8, 0.3));
+  filter: drop-shadow(0 0 4px rgba(234, 179, 8, 0.4));
+  z-index: 900 !important; /* Below open routes but above closed */
 }
 
+.route-status-closed {
+  /* Closed routes have less prominence */
+  z-index: 800 !important;
+}
+
+/* Animation for route status */
 @keyframes route-pulse {
   0% {
     opacity: 1;
