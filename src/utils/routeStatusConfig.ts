@@ -3,7 +3,7 @@
 export const statusConfig = {
   open: { 
     display: "OPEN", 
-    color: "#22c55e", 
+    color: "#22c55e", // Consistent green color
     panelClass: "bg-green-500/10 text-green-500 hover:bg-green-500/20",
     mapOptions: { color: "#22c55e", weight: 6 }
   },

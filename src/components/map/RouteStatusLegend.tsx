@@ -12,7 +12,7 @@ const RouteStatusLegend = () => {
       <div className="text-xs font-semibold mb-2">Route Status:</div>
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-[#22c55e]"></div>
+          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: statusConfig.open.color }}></div>
           <span className="text-xs">Open</span>
         </div>
         <div className="flex items-center gap-2">
@@ -20,7 +20,7 @@ const RouteStatusLegend = () => {
           <span className="text-xs">Congested</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-[#ef4444]"></div>
+          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: statusConfig.closed.color }}></div>
           <span className="text-xs">Closed</span>
         </div>
       </div>

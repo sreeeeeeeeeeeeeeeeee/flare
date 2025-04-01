@@ -33,7 +33,7 @@ const RoutePolyline: React.FC<RoutePolylineProps> = ({ route }) => {
     switch (route.status) {
       case 'open':
         return {
-          color: '#0EA5E9', // Bright blue for better visibility
+          color: statusConfig.open.color, // Use green from config
           weight: 8,
           opacity: 1.0,
           dashArray: undefined,
@@ -43,7 +43,7 @@ const RoutePolyline: React.FC<RoutePolylineProps> = ({ route }) => {
         };
       case 'congested':
         return {
-          color: '#eab308', // Yellow
+          color: statusConfig.congested.color, // Yellow
           weight: 7,
           opacity: 0.9,
           dashArray: '15, 10',
@@ -53,7 +53,7 @@ const RoutePolyline: React.FC<RoutePolylineProps> = ({ route }) => {
         };
       case 'closed':
         return {
-          color: '#ef4444', // Red
+          color: statusConfig.closed.color, // Red
           weight: 6,
           opacity: 0.7,
           dashArray: '10, 6',
