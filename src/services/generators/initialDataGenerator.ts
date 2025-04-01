@@ -25,22 +25,20 @@ export const generateInitialData = (): MapDataType => {
       id: 'route-1',
       type: 'street' as const,
       status: 'open' as const,
-      startPoint: 'Lake Shore',
+      startPoint: 'Spruce Street',
       endPoint: 'Eastern Mistissini',
       estimatedTime: 5,
       transportMethods: ['car', 'emergency'] as Array<'car' | 'foot' | 'emergency'>,
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          // Eastern route using Lakeshore Drive - Open route going east (slightly south of Main Street)
-          [-73.8700, 50.4200],
-          [-73.8670, 50.4205],
-          [-73.8640, 50.4210],
-          [-73.8610, 50.4215],
-          [-73.8580, 50.4220],
-          [-73.8550, 50.4225],
-          [-73.8520, 50.4230],
-          [-73.8490, 50.4235]
+          // Diagonal northeast route using Spruce Street - Open route going northeast
+          [-73.8550, 50.4190],
+          [-73.8570, 50.4200],
+          [-73.8590, 50.4210],
+          [-73.8610, 50.4220],
+          [-73.8630, 50.4230],
+          [-73.8650, 50.4240]
         ]
       }
     },

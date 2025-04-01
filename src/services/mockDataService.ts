@@ -14,21 +14,21 @@ const fixedEvacuationRoutes = [
     id: 'route-1',
     type: 'street' as const,
     status: 'open' as const,
-    startPoint: 'Lake Shore',
+    startPoint: 'Spruce Street',
     endPoint: 'Eastern Mistissini',
     estimatedTime: 5,
     transportMethods: ['car', 'emergency'] as Array<'car' | 'foot' | 'emergency'>,
     geometry: {
       type: 'LineString' as const,
-      coordinates: mistissiniStreets.find(street => street.name === "Lakeshore Drive")?.path.map(
+      coordinates: mistissiniStreets.find(street => street.name === "Spruce Street")?.path.map(
         ([lat, lng]) => [lng, lat] // Convert from [lat, lng] to GeoJSON [lng, lat]
       ) || [
-        [-73.8760, 50.4200],
-        [-73.8730, 50.4205],
-        [-73.8700, 50.4210],
-        [-73.8670, 50.4215],
-        [-73.8640, 50.4220],
-        [-73.8610, 50.4225]
+        [-73.8550, 50.4190],
+        [-73.8570, 50.4200],
+        [-73.8590, 50.4210],
+        [-73.8610, 50.4220],
+        [-73.8630, 50.4230],
+        [-73.8650, 50.4240]
       ]
     }
   },
